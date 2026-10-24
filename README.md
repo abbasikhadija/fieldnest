@@ -15,11 +15,14 @@ No environment values are required for M0. `.env.example` reserves browser-safe 
 
 ## GitHub Pages setup
 
-GitHub CLI is unavailable in the current environment. Install it from PowerShell, then open a new terminal so PATH is refreshed:
+GitHub CLI is installed locally at `%LOCALAPPDATA%\FieldnestTools\bin\gh.exe` (official release archive, SHA-256 checked). Add it to the current PowerShell session's PATH:
 
 ```powershell
-winget install --id GitHub.cli --exact
+$env:Path = "$env:LOCALAPPDATA\FieldnestTools\bin;$env:Path"
+gh --version
 ```
+
+On another machine, install GitHub CLI first using its official installer or `winget install --id GitHub.cli --exact`.
 
 Run the following in this directory (repository creation intentionally fails if that name already exists; stop and inspect any failure before continuing):
 
