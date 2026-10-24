@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-test('subpath navigation, assets, and cached offline reload', async ({ page, context }) => {
+test('subpath navigation, assets, and cached offline reload', async ({ page, context, baseURL }) => {
   await page.goto('./')
   await expect(page.getByRole('heading', { name: 'My work' })).toBeVisible()
   const manifest = await (await page.request.get('manifest.webmanifest')).json()
@@ -9,7 +9,7 @@ test('subpath navigation, assets, and cached offline reload', async ({ page, con
     expect((await page.request.get(icon.src)).ok()).toBe(true)
   }
   await page.evaluate(async () => { await navigator.serviceWorker.ready })
-  expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)).toBe('http://127.0.0.1:4173/fieldnest/')
+  expect(await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)).toBe(baseURL)
   await page.reload()
   await page.getByRole('link', { name: 'Activity', exact: true }).click()
   await expect(page).toHaveURL(/fieldnest\/#\/activity$/)
@@ -20,4 +20,16 @@ test('subpath navigation, assets, and cached offline reload', async ({ page, con
   await page.getByRole('link', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('keyboard skip link preserves a directly loaded hash route', async ({ page }) => {
+  await page.goto('./#/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  const skip = page.getByRole('link', { name: 'Skip to content' })
+  await skip.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('main')).toBeFocused()
+  await expect(page).toHaveURL(/fieldnest\/#\/settings$/)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
 })

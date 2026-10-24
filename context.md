@@ -37,3 +37,26 @@ Project repository initialized on main. The implementation is committed as `chor
 Install/authenticate GitHub CLI, run README setup commands, wait for successful Actions deployment, verify the actual public /fieldnest/ URL and offline behavior on its origin, then record the evidence here. M0 deployment acceptance remains pending until that succeeds.
 
 Next development milestone: M1 — Usable Inspection Interface and Local Persistence. Begin only when explicitly requested. Read the master prompt and all project context first; implement fictional demo data, predefined checklist, versioned Dexie persistence, reliable save acknowledgment, refresh recovery, validation and relevant failure tests. Do not build synchronization in M1.
+
+## M0 continuation — 2026-10-25
+
+The next incomplete milestone remains M0 because public deployment is pending. Following the request to finish remaining work before advancing, this session stayed within M0. M1 was not started.
+
+Implemented locally:
+- Fixed the keyboard skip link so it focuses main content without replacing the HashRouter fragment or losing the current route.
+- Added desktop/mobile regression coverage for direct Settings URLs, keyboard activation and reload.
+- Added FIELDNEST_BASE_URL support to the existing Playwright configuration, so the identical production suite can verify the eventual HTTPS Pages deployment without starting a local server. Scope expectations now use the configured target. Invalid subpaths, query strings, fragments and non-HTTPS remote targets are rejected.
+- Expanded README with exact GitHub CLI installation, authentication, repository creation, Pages setup and deployed-origin test commands. Clarified Node 22.12+ requirement.
+
+Latest verification (supersedes earlier M0 test counts):
+- npm run typecheck: passed.
+- npm run lint: passed.
+- npm test: 2 tests passed.
+- npm run build: passed; 11 precache entries (~297.59 KiB), main JS ~87.25 KiB gzip.
+- npm run test:e2e: 4 tests passed across desktop Chromium and mobile emulation. Includes existing manifest/assets/scope/offline behavior and new skip-link route preservation coverage.
+- Workflow YAML parsed using installed js-yaml, with verify/deploy jobs and main push trigger checked. This is a structural local check, not an executed GitHub Actions run.
+- git diff --check: passed.
+
+Git: baseline M0 commit is 3df8b26. This follow-up is committed as `fix: preserve hash navigation and prepare live Pages verification` (use git log for its hash). No origin exists and gh is still unavailable, so no push or deployment was attempted. No external credentials were accessed. Existing application functionality is preserved.
+
+Remaining blocker: install/authenticate GitHub CLI and create or explicitly attach the intended public repository, enable Actions-based Pages, wait for the deployment workflow, then run the live-origin suite documented in README. No deployed URL has been verified. Real-device installation checks remain unverified. Next milestone after closing deployment setup: M1 — Usable Inspection Interface and Local Persistence.
