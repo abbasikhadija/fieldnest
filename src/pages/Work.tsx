@@ -1,0 +1,11 @@
+import { Link } from 'react-router-dom'
+import { Icon } from '../components/Icon'
+
+export function Work() {
+  return <>
+    <div className="page-heading"><div><p className="eyebrow">A little clarity for your day</p><h1>My work</h1><p>Your inspections, together in one place.</p></div><span className="badge">Foundation preview</span></div>
+    <section className="welcome"><div className="welcome-copy"><span className="eyebrow">Made for the field</span><h2>Good work starts<br />with a clear next step.</h2><p>A quieter place for property inspections.<br className="desktop-break" /> Built to keep your work close, wherever the day takes you.</p><Link className="button" to="/about">Explore Fieldnest <Icon name="arrow" size={18} /></Link></div><div className="house-art" aria-hidden="true"><svg viewBox="0 0 320 240" fill="none"><ellipse cx="164" cy="217" rx="125" ry="12" fill="#dfe5d9"/><path d="M66 110 157 40l93 70v101H66Z" fill="#f7f8ef" stroke="#54715c" strokeWidth="2"/><path d="m48 113 109-86 110 86" stroke="#285746" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/><path d="M91 121h41v42H91zm91 0h41v42h-41Z" fill="#d9e3d3" stroke="#54715c" strokeWidth="2"/><path d="M143 211v-70h28v70m-59-90v42m-21-21h41m70-21v42m-20-21h41" stroke="#54715c" strokeWidth="2"/><path d="M269 212v-69m0 36c-32 0-34-29-34-29 29-3 34 29 34 29Zm0-14s-1-37 28-42c5 31-28 42-28 42Z" stroke="#54715c" strokeWidth="2" fill="#bdcdb5"/></svg></div></section>
+    <section aria-labelledby="inspections-heading" className="work-section"><div className="section-heading"><h2 id="inspections-heading">Inspections</h2><span className="subtle">Your workspace is ready</span></div><div className="empty-state"><div className="icon-tile"><Icon name="work" size={28} /></div><h3>A fresh start.</h3><p>Your assigned properties and unfinished inspections will appear here.<br />The inspection workflow is coming in the next milestone.</p><Link className="text-link" to="/inspection/preview">Preview inspection details <Icon name="arrow" size={16} /></Link></div></section>
+    <aside className="quiet-note"><Icon name="leaf" /><div><strong>Your work. Saved wherever you are.</strong><p>We’re laying the groundwork. This preview has no inspection records or server connection yet.</p></div></aside>
+  </>
+}
