@@ -3,7 +3,7 @@
 Updated 2026-10-25 (Asia/Karachi).
 
 ## Current milestone
-M1 — Usable Inspection Interface and Local Persistence: implementation complete and locally verified. M0 is complete and already deployed. M1 deployment verification is pending the implementation push and Actions run; do not claim the deployed origin has M1 until verified. No M2 work has started.
+M1 — Usable Inspection Interface and Local Persistence: complete, deployed and verified at https://abbasikhadija.github.io/fieldnest/. GitHub Actions run 40172186264 succeeded for implementation commit 2e55a6c39b7f5afb19e5fc650a213316358fe70e. All 10 browser tests also passed against the live origin. M0 remains complete. No M2 work has started.
 
 ## Implemented functionality
 - Explicit Try Fieldnest initializes three fictional local demo properties atomically, only once.
@@ -40,7 +40,7 @@ fieldnest-demo-v1 is exclusively a fictional-demo database; M2 must create separ
 Only acknowledged IndexedDB writes survive refresh/crash. An unsaved in-memory buffer can be lost on forced close or mobile OS termination; beforeunload is best effort. Browser deletion/eviction, private browsing and device loss remain limits. Persistent storage is not a backup. JSON downloads have no in-app import. No destructive reset/cleanup is exposed. Real mobile hardware, Safari/Firefox and native PWA installation prompts have not been verified. No backend/database synchronization tests apply before M2/M3. No external setup is needed for the local demo.
 
 ## Git and deployment
-main tracks origin/main at https://github.com/abbasikhadija/fieldnest.git. HTTPS pushes are authorized; no GitHub CLI login is necessary. Pages uses GitHub Actions. M0 deployment run 40171118430 succeeded for commit 80b1b90 and its four deployed-origin tests passed. Prior foundation commits include 3df8b26, 7bf352b and ccff88d. The M1 implementation commit is named `feat: implement offline inspection drafts and local demo`; deployment evidence will be appended after verification. No force-push or history rewrite is authorized.
+main tracks origin/main at https://github.com/abbasikhadija/fieldnest.git. HTTPS pushes are authorized; no GitHub CLI login is necessary. Pages uses GitHub Actions. M0 deployment run 40171118430 succeeded for commit 80b1b90 and its four deployed-origin tests passed. Prior foundation commits include 3df8b26, 7bf352b and ccff88d. M1 implementation commit 2e55a6c (`feat: implement offline inspection drafts and local demo`) was committed and pushed. GitHub Actions run https://github.com/abbasikhadija/fieldnest/actions/runs/40172186264 completed successfully, including verify and deploy. The public origin returned HTTP 200 and served the verified M1 asset index-Bax8VXxB.js. With FIELDNEST_BASE_URL set to the live URL, npm run test:e2e passed all 10 desktop/mobile tests. Deployment evidence is recorded in the follow-up documentation commit; no functional changes followed the verified implementation. No force-push or history rewrite is authorized.
 
 ## Next milestone
 M2 — Real Database, Authentication, and Authorization. Begin only on a new instruction. Read MASTER_PROMPT.md and all project context first. Establish reproducible Supabase/PostgreSQL migrations, assignments, two authorized test users, Auth, RLS, input validation and actual database integration tests. Protect account-scoped caches and preserve unsynchronized work on sign-out. Do not implement server synchronization until M3.

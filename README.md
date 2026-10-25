@@ -52,7 +52,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-See context.md for the latest verified deployment and test results. M0 hosting was verified; do not infer a later implementation is live until its workflow and deployed-origin tests succeed.
+M1 deployment is verified: [GitHub Actions run 40172186264](https://github.com/abbasikhadija/fieldnest/actions/runs/40172186264) succeeded for commit 2e55a6c, and all 10 desktop/mobile browser tests passed against the public origin. See context.md for detailed verification and limitations.
 
 ## Engineering notes
 
