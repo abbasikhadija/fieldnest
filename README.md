@@ -53,7 +53,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-M3 frontend deployment is verified: [GitHub Actions run 40183528823](https://github.com/abbasikhadija/fieldnest/actions/runs/40183528823) passed strict checks, 56 unit tests, 34 real PostgreSQL tests, 13 actual Supabase Auth/API tests and four connected desktop/mobile browser tests before deployment. All 12 standard browser regressions also passed independently against the public site. Offline completion, lost-response replay and retrieval by a second authorized account were tested against disposable Supabase. The hosted project still needs the new M3 migration before cloud synchronization; see [upgrade instructions](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization).
+M4 conflict resolution is implemented: compare saved device/server copies, choose a copy explicitly, and retain both in device recovery history. Resubmission checks the reviewed server version; another update produces another conflict. [Integration run 40188243282](https://github.com/abbasikhadija/fieldnest/actions/runs/40188243282) passed 66 unit tests, 37 real PostgreSQL tests, 14 actual Supabase Auth/API tests and eight connected desktop/mobile browser tests. The hosted M3 migration was applied by the owner; M4 requires no additional cloud SQL. Manual hosted offline/second-device testing was explicitly skipped, separately from the automated disposable Supabase coverage.
 
 ## Engineering notes
 

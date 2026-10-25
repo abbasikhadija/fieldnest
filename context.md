@@ -1,9 +1,9 @@
 # Project context
 
-Updated 2026-10-25 (Asia/Karachi).
+Updated 2026-10-26 (Asia/Karachi).
 
 ## Current milestone
-M4 — Conflict Detection and Resolution: implemented and locally verified; actual Supabase/connected-browser CI and deployment are pending the implementation push. M3's hosted migration was applied successfully according to the owner; online synchronized edits and refresh recovery were user-confirmed. The owner explicitly skipped the remaining manual hosted connected-offline/second-device check and authorized M4. Keep that manual check unverified; actual offline/second-account acceptance already passed in disposable Supabase CI. M5 has not begun.
+M4 — Conflict Detection and Resolution: implementation recovered from ff15102; all backend and connected-browser CI gates passed in run 40188243282. The preserved conflict-screen styles and final verification documentation are being completed without restarting M4. M3's hosted migration was applied successfully according to the owner; online synchronized edits and refresh recovery were user-confirmed. The owner explicitly skipped the remaining manual hosted connected-offline/second-device check and authorized M4. Keep that manual check unverified; actual offline/second-account acceptance already passed in disposable Supabase CI. M5 has not begun.
 ## Completed prior milestones
 M0 established and deployed the frontend/PWA foundation. M1 implemented the fictional local demo, fixed checklist, durable device drafts, review/completion and recovery. M1 commit 2e55a6c deployed successfully in Actions run 40172186264 and passed all 10 then-current deployed-origin browser tests. M1 verification documentation commit: 2aaeb84. Preserve that functionality.
 
@@ -159,3 +159,14 @@ Local commands actually executed:
 Important files: src/domain/conflict.ts; src/sync/ConflictReview.tsx; RecoveryHistory.tsx; database.ts; conflictResolution.test.tsx; e2e-connected/conflicts.spec.ts; tests/database/synchronization.mjs; docs/SYNC_PROTOCOL.md. No new dependency or privileged browser credential is introduced.
 
 Git commit subject: `feat: add reviewed conflict resolution and recovery history`. Push is authorized. Next milestone after M4 verification is M5 — Reliability and Failure Recovery, only when explicitly requested. Known limits remain browser storage eviction/deletion/device loss, no in-app JSON import, no completed-server overwrite, and unverified real mobile hardware/Safari/Firefox. Hosted manual connected-offline verification was explicitly skipped; do not block M4/M5 solely by repeating that request.
+
+## M4 interrupted-session recovery — 2026-10-26
+Recovered rather than restarted: ff15102 was already committed and pushed, with the complete comparison UI, version-checked resolution transactions, recovery history, schema upgrade and automated conflict/concurrency coverage. Its GitHub Actions run 40188243282 passed verify, verify-auth and deploy. Job logs independently confirmed 66 unit tests, 37 real PostgreSQL tests, 14 real Supabase Auth/PostgREST tests and eight connected browser tests. These include the two-authorized-client offline conflict, resolution, repeated conflict after a server edit during review, reload recovery and second-client retrieval. No missing server concurrency mechanism was found.
+
+The only starting uncommitted change was src/styles.css, containing the intended M4 responsive comparison/choice/history styling. It was preserved in full. Prior CI screenshots confirmed the deployed conflict view lacked that styling; this continuation finishes its inclusion. Only src/styles.css, README.md and context.md are changed by this continuation. No working M0–M3 source, dependency, migration or sync engine was rewritten. Architecture and protocol already matched the implementation and needed no further edits.
+
+Fresh execution: type checking and ESLint passed; all 66 unit tests passed; all 37 native PostgreSQL 18.1 tests passed. The pre-continuation deployed origin passed all 12 desktop/mobile regressions (38.1s). Production build and final styled browser results are recorded below after completion. Real Supabase remains unavailable locally without Docker; its actual integration/browser execution was verified from successful CI, not represented as a local run. A new CI run will verify the completion commit before deployment.
+
+Commit requested for this continuation: feat: implement inspection conflict resolution. Existing commits are retained unchanged. No cloud migration or account setup is needed for M4. Remaining limitations: manual hosted offline/second-device testing was skipped by the owner; real mobile hardware/Safari/Firefox remain unverified; browser data deletion/eviction can remove local history; exports have no in-app import. Next milestone is M5, which has not begun.
+
+Final styled local build passed (12 precached assets, 676.95 KiB); all 12 production-build desktop/mobile browser regressions passed in 17.5s, including /fieldnest/ assets, manifest scope and offline reload. git diff --check passed. The completion commit includes only the preserved stylesheet and the two documentation files. Push/deployment evidence will follow without rewriting this commit.
