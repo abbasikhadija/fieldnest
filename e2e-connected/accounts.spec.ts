@@ -54,7 +54,11 @@ test('real connected sign-in, shared records, cross-tab sign-out and demo isolat
   ).toHaveCount(0)
   await login(page, 1)
   await page.getByRole('button', { name: /12 Willow Court/ }).click()
-  await expect(page.getByText('Server draft · Version 1')).toBeVisible()
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Synchronized with server · Version 1' }),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Sign out', exact: true }).click()
   await page.getByRole('link', { name: '← Local demo workspace' }).click()
   await page.getByRole('link', { name: /12 Willow Court/ }).click()

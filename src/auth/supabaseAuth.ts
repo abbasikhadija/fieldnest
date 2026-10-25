@@ -1,19 +1,24 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import {
+  isAuthRetryableFetchError,
+  type SupabaseClient,
+} from '@supabase/supabase-js'
 import type { Database } from '../remote/database.types'
 import type { AuthPort } from './accountStore'
 export function supabaseAuth(client: SupabaseClient<Database>): AuthPort {
+  const cachedIdentity = async () => {
+    const { data } = await client.auth.getSession()
+    return data.session?.user
+      ? {
+          id: data.session.user.id,
+          email: data.session.user.email ?? 'Connected account',
+        }
+      : null
+  }
   return {
     async verify() {
-      if (!navigator.onLine) {
-        const { data } = await client.auth.getSession()
-        return data.session?.user
-          ? {
-              id: data.session.user.id,
-              email: data.session.user.email ?? 'Connected account',
-            }
-          : null
-      }
+      if (!navigator.onLine) return cachedIdentity()
       const { data, error } = await client.auth.getUser()
+      if (isAuthRetryableFetchError(error)) return cachedIdentity()
       if (error?.name === 'AuthSessionMissingError') return null
       if (error) throw error
       return data.user
