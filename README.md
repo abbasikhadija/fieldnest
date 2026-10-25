@@ -53,7 +53,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-M4 conflict resolution is implemented: compare saved device/server copies, choose a copy explicitly, and retain both in device recovery history. Resubmission checks the reviewed server version; another update produces another conflict. [Integration run 40188243282](https://github.com/abbasikhadija/fieldnest/actions/runs/40188243282) passed 66 unit tests, 37 real PostgreSQL tests, 14 actual Supabase Auth/API tests and eight connected desktop/mobile browser tests. The hosted M3 migration was applied by the owner; M4 requires no additional cloud SQL. Manual hosted offline/second-device testing was explicitly skipped, separately from the automated disposable Supabase coverage.
+M4 conflict resolution is implemented: compare saved device/server copies, choose a copy explicitly, and retain both in device recovery history. Resubmission checks the reviewed server version; another update produces another conflict. [Integration run 40225583165](https://github.com/abbasikhadija/fieldnest/actions/runs/40225583165) passed 66 unit tests, 37 real PostgreSQL tests, 14 actual Supabase Auth/API tests and eight connected desktop/mobile browser tests. The hosted M3 migration was applied by the owner; M4 requires no additional cloud SQL. Manual hosted offline/second-device testing was explicitly skipped, separately from the automated disposable Supabase coverage.
 
 ## Engineering notes
 
