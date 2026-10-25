@@ -88,6 +88,11 @@ try {
   await check('anonymous HTTP reads are denied', async () => {
     assert.ok((await anonymous().from('inspections').select('*')).error)
   })
+  await check('public email signup is disabled while existing users can sign in', async () => {
+    const result = await anonymous().auth.signUp({ email: `blocked-${randomUUID()}@example.test`, password: `${randomBytes(24).toString('base64url')}aA9!` })
+    if (result.data.user) await admin.auth.admin.deleteUser(result.data.user.id)
+    assert.ok(result.error, 'Public signup must be rejected')
+  })
   await check('wrong passwords are rejected by real Auth', async () => {
     assert.ok(
       (
