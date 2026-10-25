@@ -1,13 +1,37 @@
 # Architecture
 
-## Implemented in M0
-React with strict TypeScript, Vite and Tailwind CSS v4. App owns layout and React Router routes; src/pages owns screen content; src/components owns shared icons and system notices. CSS defines reusable visual primitives and mobile bottom navigation. No external font requests or image dependencies.
+## Application and hosting
+React with strict TypeScript, Vite, Tailwind CSS v4 and React Router. App owns the responsive layout and routes; pages own task workflows; components contain shared icons, storage recovery and system notices. No external fonts or image requests are required.
 
-HashRouter keeps route fragments client-side so GitHub Pages needs no fallback rewrite. Vite base is /fieldnest/. PWA start URL, id, scope, navigation fallback and icons use this repository scope. vite-plugin-pwa/Workbox precaches static build assets only; no authenticated API runtime cache exists. Updates require an explicit reload action. Offline capability begins after successful service-worker installation; this milestone only caches screens.
+HashRouter keeps routes in URL fragments, so GitHub Pages requires no rewrite. Vite base, manifest start URL, id, scope, icons and navigation fallback target /fieldnest/. Workbox precaches static assets only, never API data. Updates require an explicit reload and are disabled while a draft is dirty or a write is pending. Offline availability begins after the app has been successfully cached.
 
-Vitest/Testing Library check navigation and fallback behavior. Playwright runs production preview on desktop and mobile, verifies hash navigation, offline reload and viewport overflow. GitHub Actions runs all checks before uploading and deploying Pages artifacts on main; pull requests only verify.
+## M1 domain and local persistence
+src/domain/inspection.ts defines the fixed eight-question checklist, answer types, progress and validation. The checklist covers general condition, kitchen, bathroom and electrical/safety checks; property information is immutable assignment context. Observations are optional and limited to 5,000 characters. Every question requires Pass, Fail or Not applicable before completion. Fail remains a valid recorded finding, rather than blocking completion.
 
-Set FIELDNEST_BASE_URL to an HTTPS URL ending in /fieldnest/ to run Playwright against a real deployment without starting the local preview server. The same assertions check deployed manifest assets and service-worker scope. The keyboard skip link focuses main without mutating the fragment owned by HashRouter.
+src/persistence/database.ts defines Dexie schema version 1 in fieldnest-demo-v1. This database is exclusively for fictional local demo records. Future authenticated caches must use a separate account-scoped database and must never adopt this database as an authenticated user's workspace. No remote client, account cache or synchronization queue exists in M1.
 
-## Planned boundaries
-M1 introduces domain models, versioned Dexie persistence and form validation. M2 introduces Supabase auth, remote access and SQL migrations. M3 adds a synchronization engine separated from UI. No empty implementation stubs or backend clients are introduced in M0. Account caches and demo caches must remain isolated. Database integration and deterministic synchronization suites will arrive with the corresponding implementation.
+Tables:
+- inspections: primary key id; indexed status and updatedAt. Stores immutable property context, answers, notes, lifecycle state, local revision and acknowledged timestamps.
+- meta: primary key key. An initialized marker is written in the same transaction as demo assignments, so refresh/concurrent startup never reseeds or overwrites drafts.
+
+Schema changes must add a Dexie version with an explicit migration and tests; never delete/recreate the database to handle an upgrade. On versionchange the old connection closes. A failed subsequent read presents a storage recovery screen rather than silently resetting records.
+
+Each save transaction reads the current record, checks expected local revision, rejects completed/stale writes, then persists the full draft with incremented revision and timestamp. Completion validates the checklist and commits status, answers and completion timestamp atomically. Completed demo inspections are read-only; the user can still review and download them. No save-success UI appears until the transaction resolves.
+
+## Autosave and recovery
+src/persistence/draftSession.ts owns per-record in-memory editing sessions across route changes. Choice inputs save immediately. Notes use a 250 ms trailing debounce; changes arriving while a write is running are coalesced into the next write. Only one write runs per session. Explicit flush and completion bypass the debounce, and completion waits for all draft writes. Sessions retain newer input while prior generations are being acknowledged.
+
+Navigation never disposes an unsaved session. Failed writes leave the latest buffer dirty, stop automatic retries and show Retry/Download recovery actions. A global notice links back to unsaved records from any page. beforeunload requests a browser warning while a session is dirty or saving; update reload is blocked during the same period. Browser crashes, force-close and mobile OS termination can discard unacknowledged memory; only completed device writes survive refresh/restart. The UI never claims otherwise.
+
+Dexie live queries refresh clean views after other tabs save. A dirty tab keeps its buffer and expected revision; a stale write is rejected transactionally. The user can download their retained draft and explicitly discard it to load the newer device copy. There is no automatic overwrite or merge. These local safeguards are not a server conflict implementation.
+
+## Storage controls and limits
+Settings requests persistent storage on a user action, reports the browser's result and approximate origin usage, and exports acknowledged records as JSON. Failed drafts can be downloaded directly from the editor. Exports are readable copies; in-app import is not implemented. No clear/reset action silently removes work. Storage denial, quota errors and failed transactions remain visible. Browser deletion/eviction, private browsing and device loss are documented limitations. Browser warnings and persistence requests are best effort, not durability guarantees.
+
+## Verification and CI
+Vitest/Testing Library cover navigation and honest demo status. fake-indexeddb exercises transactional seed behavior, draft reopen, abort rollback, validation, completion and stale-write rejection; these tests do not establish PostgreSQL guarantees. DraftSession tests cover delayed acknowledgments, coalescing/debounce, failed writes/retries and failed completion.
+
+Playwright exercises built desktop/mobile workflows: subpath assets, manifest/scope, offline reload, direct routes/keyboard skip link, draft recovery, immediate route navigation, offline editing and completion, injected IndexedDB failures and two-tab stale drafts with explicit recovery. FIELDNEST_BASE_URL runs the same suite against an HTTPS /fieldnest/ deployment without a local preview server. GitHub Actions runs all checks before deployment on main; PRs only verify.
+
+## Next boundaries
+M2 introduces Supabase authentication, PostgreSQL schema, migrations and RLS with actual database integration tests. M3 introduces the documented transactional sync protocol. Neither is implemented in M1.

@@ -2,26 +2,49 @@
 
 **Your work. Saved wherever you are.**
 
-A calm, offline-first property inspection app. Currently at M0: a responsive foundation preview with navigable screens and cached static resources. Inspection editing and durable local drafts arrive in M1. No records are saved or synchronized yet.
+An offline-first property inspection app for people working away from a dependable connection.
+
+[Try Fieldnest](https://abbasikhadija.github.io/fieldnest/) · [Source](https://github.com/abbasikhadija/fieldnest)
+
+## Local demo
+
+Choose **Try Fieldnest** to create three fictional property assignments on this device. Open a property, answer the eight predefined checks, add observations and review your inspection. You can leave an incomplete draft and return later. Once every check is answered, complete it to keep a read-only local result.
+
+Choices save immediately; notes save after a short pause. Wait for **Saved on this device** before closing or refreshing. Once the app has been cached, available inspections can be edited and completed offline. Activity shows acknowledged local saves. Demo records are never sent to a server.
+
+Storage errors keep your latest edits in the current tab with retry/download actions. If another tab saved a newer copy, Fieldnest preserves your draft and asks you to download it before explicitly discarding it to load the device copy. Settings can request persistent storage and download saved records as JSON. In-app import is not available yet.
+
+Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
+
+Connected accounts, real assignments and server synchronization are not implemented. M1 adds the local workflow; M2 introduces Supabase/PostgreSQL authentication and authorization.
 
 ## Develop
 
-Use Node.js 22.12 or newer in the Node 22 release line. Install with `npm ci`, then `npm run dev` and open http://127.0.0.1:5173/fieldnest/.
+Use Node.js 22.12 or newer in the Node 22 release line:
 
-Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
-Browser tests: `npx playwright install chromium`, then `npm run test:e2e`. These run the built app on desktop and mobile and verify offline screen reload. `npm run preview` serves the production build.
+```sh
+npm ci
+npm run dev
+```
 
-No environment values are required for M0. `.env.example` reserves browser-safe Supabase configuration for M2. Never use secret/service-role credentials in Vite variables.
+Open http://127.0.0.1:5173/fieldnest/. No credentials are needed for the demo. `.env.example` reserves browser-safe Supabase configuration for M2; never put secret/service-role keys in Vite variables.
 
-## Live application and deployment
+```sh
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
 
-Open [Fieldnest](https://abbasikhadija.github.io/fieldnest/). M0 is deployed and verified; this is a foundation preview, with inspection editing and local drafts planned for M1.
+Unit tests cover local transactions, save acknowledgment/recovery and validation. Browser tests exercise desktop/mobile forms, offline refresh/completion, injected storage failure, navigation and two-tab stale drafts. The suite runs against the production build under /fieldnest/.
 
-The [public repository](https://github.com/abbasikhadija/fieldnest) is configured with GitHub Actions as its Pages source. Pushes to main run dependency installation, type checking, lint, unit tests, production build and Chromium tests before deploying. Pull requests run verification only. Do not recreate the repository or change Pages to branch-based deployment.
+## Deployment
 
-[Deployment run 40171118430](https://github.com/abbasikhadija/fieldnest/actions/runs/40171118430) succeeded. The deployed origin returned HTTP 200 and passed all four desktop/mobile browser checks, including offline reload, asset paths, service-worker scope and keyboard navigation. Real-device installation prompts have not been verified.
+GitHub Pages uses GitHub Actions as its source. Pushes to main verify types, lint, unit tests, production build and browser tests before deploying. Pull requests only verify. Hash routes avoid server rewrites. The manifest, service worker and static assets are scoped to /fieldnest/. No backend is hosted on Pages.
 
-Run the same suite against the live site from PowerShell:
+To test the actual deployed version from PowerShell:
 
 ```powershell
 $env:FIELDNEST_BASE_URL = 'https://abbasikhadija.github.io/fieldnest/'
@@ -29,8 +52,8 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-This mode does not start a local preview server. Hash routes require no server rewrites. All static assets, manifest and service-worker scope target `/fieldnest/`.
+See context.md for the latest verified deployment and test results. M0 hosting was verified; do not infer a later implementation is live until its workflow and deployed-origin tests succeed.
 
 ## Engineering notes
 
-See MASTER_PROMPT.md for scope and milestones, context.md for verified progress, and docs/ for architecture, decisions and synchronization design intent. Future drafts use IndexedDB/Dexie; connected mode uses Supabase/PostgreSQL/RLS. Browser storage can be evicted or cleared and cannot protect against device loss. Full demo and connected workflows are not implemented in M0.
+MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents future synchronization design intent. No server correctness is claimed from local tests.

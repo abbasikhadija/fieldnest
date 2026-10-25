@@ -1,11 +1,132 @@
+import { useInspections } from '../persistence/useInspections'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
+import { StorageError } from '../components/LocalData'
+import { startDemo } from '../persistence/database'
+import { progress, questions, statusLabel } from '../domain/inspection'
 
 export function Work() {
-  return <>
-    <div className="page-heading"><div><p className="eyebrow">A little clarity for your day</p><h1>My work</h1><p>Your inspections, together in one place.</p></div><span className="badge">Foundation preview</span></div>
-    <section className="welcome"><div className="welcome-copy"><span className="eyebrow">Made for the field</span><h2>Good work starts<br />with a clear next step.</h2><p>A quieter place for property inspections.<br className="desktop-break" /> Built to keep your work close, wherever the day takes you.</p><Link className="button" to="/about">Explore Fieldnest <Icon name="arrow" size={18} /></Link></div><div className="house-art" aria-hidden="true"><svg viewBox="0 0 320 240" fill="none"><ellipse cx="164" cy="217" rx="125" ry="12" fill="#dfe5d9"/><path d="M66 110 157 40l93 70v101H66Z" fill="#f7f8ef" stroke="#54715c" strokeWidth="2"/><path d="m48 113 109-86 110 86" stroke="#285746" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/><path d="M91 121h41v42H91zm91 0h41v42h-41Z" fill="#d9e3d3" stroke="#54715c" strokeWidth="2"/><path d="M143 211v-70h28v70m-59-90v42m-21-21h41m70-21v42m-20-21h41" stroke="#54715c" strokeWidth="2"/><path d="M269 212v-69m0 36c-32 0-34-29-34-29 29-3 34 29 34 29Zm0-14s-1-37 28-42c5 31-28 42-28 42Z" stroke="#54715c" strokeWidth="2" fill="#bdcdb5"/></svg></div></section>
-    <section aria-labelledby="inspections-heading" className="work-section"><div className="section-heading"><h2 id="inspections-heading">Inspections</h2><span className="subtle">Your workspace is ready</span></div><div className="empty-state"><div className="icon-tile"><Icon name="work" size={28} /></div><h3>A fresh start.</h3><p>Your assigned properties and unfinished inspections will appear here.<br />The inspection workflow is coming in the next milestone.</p><Link className="text-link" to="/inspection/preview">Preview inspection details <Icon name="arrow" size={16} /></Link></div></section>
-    <aside className="quiet-note"><Icon name="leaf" /><div><strong>Your work. Saved wherever you are.</strong><p>We’re laying the groundwork. This preview has no inspection records or server connection yet.</p></div></aside>
-  </>
+  const data = useInspections()
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState(false)
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">A little clarity for your day</p>
+          <h1>My work</h1>
+          <p>Your inspections, together in one place.</p>
+        </div>
+        <span className="badge">Local demo</span>
+      </div>
+      {!data ? (
+        <p role="status">Opening your device workspace…</p>
+      ) : data.error ? (
+        <StorageError />
+      ) : data.records.length ? (
+        <>
+          <div className="demo-notice">
+            Fictional demo properties · Saved on this device only. No server
+            synchronization.
+          </div>
+          <section
+            aria-labelledby="inspections-heading"
+            className="work-section"
+          >
+            <div className="section-heading">
+              <h2 id="inspections-heading">Your inspections</h2>
+              <span className="subtle">{data.records.length} properties</span>
+            </div>
+            <div className="inspection-list">
+              {data.records.map((record) => (
+                <Link
+                  className="inspection-card"
+                  to={`/inspection/${record.id}`}
+                  key={record.id}
+                >
+                  <div className="property-icon">
+                    <Icon name="home" />
+                  </div>
+                  <div className="property-copy">
+                    <span className="eyebrow">{record.kind}</span>
+                    <h2>{record.property}</h2>
+                    <p>{record.address}</p>
+                    <span className="status-pill">
+                      {statusLabel(record.status)}
+                    </span>
+                    <div className="progress-row">
+                      <progress
+                        value={progress(record)}
+                        max={questions.length}
+                        aria-label={`${record.property} checklist progress`}
+                      />
+                      <span>
+                        {progress(record)}/{questions.length} checks
+                      </span>
+                    </div>
+                  </div>
+                  <Icon name="arrow" size={20} />
+                </Link>
+              ))}
+            </div>
+          </section>
+        </>
+      ) : (
+        <section className="welcome">
+          <div className="welcome-copy">
+            <span className="eyebrow">Made for the field</span>
+            <h2>
+              Good work starts
+              <br />
+              with a clear next step.
+            </h2>
+            <p>
+              Try a property inspection with fictional records. Your answers
+              stay on this device, ready to return to even without a connection.
+            </p>
+            <button
+              className="button"
+              disabled={starting}
+              onClick={async () => {
+                setStarting(true)
+                setError(false)
+                try {
+                  await startDemo()
+                } catch {
+                  setError(true)
+                } finally {
+                  setStarting(false)
+                }
+              }}
+            >
+              {starting ? 'Preparing your workspace…' : 'Try Fieldnest'}{' '}
+              <Icon name="arrow" size={18} />
+            </button>
+            {error && (
+              <p role="alert">
+                Could not create the demo on this device. Check storage
+                permissions and available space, then try again. No save has
+                been confirmed.
+              </p>
+            )}
+          </div>
+          <div className="welcome-symbol" aria-hidden="true">
+            <Icon name="home" size={110} />
+          </div>
+        </section>
+      )}
+      <aside className="quiet-note">
+        <Icon name="leaf" />
+        <div>
+          <strong>Your work. Saved wherever you are.</strong>
+          <p>
+            Locally saved work survives refreshes. Clearing browser data,
+            storage eviction, or device loss can remove it. Download a copy of
+            important records.
+          </p>
+        </div>
+      </aside>
+    </>
+  )
 }

@@ -11,3 +11,6 @@ Client acknowledgment processing must atomically persist accepted version/result
 A version mismatch preserves local and remote snapshots. Manual resolution displays differences and creates a new operation against the reviewed server version. Repeated conflicts require review again, never unconditional overwrite. Account changes cannot expose another user's records or silently delete pending work. Multi-tab coordination is an optimization; server idempotency remains mandatory.
 
 Before M3 finalize operation schema, RPC/error contract, dependency ordering, queue leasing, retention and security rules. Verify against real database transactions, including duplicate delivery, lost acknowledgment, interrupted local acknowledgment and two-device conflicts. No guarantees above have been tested in M0.
+
+## M1 boundary
+Local demo inspection saving is now implemented with Dexie; the protocol above remains design intent for future connected mode. The local revision is a device-only concurrency token, not a server version. No operation identifiers, mutation queue, remote processing, acknowledgments or synchronization workers exist yet. Demo records never display server acceptance or pending-sync indicators. Detailed local save/recovery semantics are documented in ARCHITECTURE.md.
