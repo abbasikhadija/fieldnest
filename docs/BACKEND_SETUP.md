@@ -1,6 +1,6 @@
-# Supabase setup (M2)
+# Supabase setup (M2 foundation and M3 upgrade)
 
-M2 provides real password authentication, authorized assignment/record reads, SQL constraints and RLS. Connected records are read-only and online-only in this milestone. M3 will add durable synchronization. The existing local demo needs no backend and remains isolated.
+M2 provides real password authentication, authorized assignment/record reads, SQL constraints and RLS. Connected records are read-only and online-only in this milestone. M3 implements durable synchronization; existing hosted projects must apply the new migration using the M3 upgrade section below. The existing local demo needs no backend and remains isolated.
 
 ## Local Supabase with Docker
 
