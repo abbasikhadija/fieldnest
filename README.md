@@ -53,7 +53,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-M1 deployment is verified: [GitHub Actions run 40172186264](https://github.com/abbasikhadija/fieldnest/actions/runs/40172186264) succeeded for commit 2e55a6c, and all 10 desktop/mobile browser tests passed against the public origin. See context.md for detailed verification and limitations.
+M2 frontend deployment is verified: [GitHub Actions run 40174570852](https://github.com/abbasikhadija/fieldnest/actions/runs/40174570852) passed the normal checks, 12 real Supabase Auth/API tests and 2 connected-browser tests before deployment. All 12 default desktop/mobile tests also passed against the public origin. Hosted Supabase configuration remains external; no hosted account access is claimed. See context.md and docs/BACKEND_SETUP.md for evidence, setup and limitations.
 
 ## Engineering notes
 
