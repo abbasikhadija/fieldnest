@@ -16,7 +16,7 @@ Storage errors keep your latest edits in the current tab with retry/download act
 
 Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
 
-M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment is connected to a hosted Supabase project; private-user sign-in and assignment verification are still pending. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
+M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment is connected to Supabase. The account owner confirmed private sign-in, assigned inspection access and sign-out; Email sign-in and disabled public signup were independently checked. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
 
 ## Develop
 
@@ -53,7 +53,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-M2 frontend deployment is verified: [GitHub Actions run 40174570852](https://github.com/abbasikhadija/fieldnest/actions/runs/40174570852) passed the normal checks, 12 real Supabase Auth/API tests and 2 connected-browser tests before deployment. All 12 default desktop/mobile tests also passed against the public origin. Hosted Supabase configuration remains external; no hosted account access is claimed. See context.md and docs/BACKEND_SETUP.md for evidence, setup and limitations.
+M2 frontend deployment is verified: [GitHub Actions run 40174570852](https://github.com/abbasikhadija/fieldnest/actions/runs/40174570852) passed the normal checks, 12 real Supabase Auth/API tests and 2 connected-browser tests before deployment. All 12 default desktop/mobile tests also passed against the public origin. Hosted Supabase is configured; the account owner has confirmed assigned inspection access and sign-out. Automated multi-user authorization tests ran against disposable Supabase CI, not the hosted user account. See context.md and docs/BACKEND_SETUP.md for evidence, setup and limitations.
 
 ## Engineering notes
 

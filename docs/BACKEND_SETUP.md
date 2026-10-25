@@ -115,3 +115,6 @@ npx supabase migration repair 20261025000100 --status applied --linked
 ```
 
 Do not run repair if history already contains that version or if the schema does not match. Investigate drift first. No repair/reset has been performed during this setup, and no privileged database password was provided to the agent.
+
+## Hosted setup accepted — 2026-10-25
+The account owner confirmed private sign-in, assigned Willow Court visibility, checklist access and successful sign-out on the deployed site. The hosted Auth settings endpoint independently confirmed Email enabled and public signup disabled. Hosted M2 setup is complete. Hosted second-user/unassigned-user scenarios were not separately exercised; those authorization scenarios passed against real disposable Supabase CI. Never treat historical pending-setup notes as instructions to recreate/reset this configured project.
