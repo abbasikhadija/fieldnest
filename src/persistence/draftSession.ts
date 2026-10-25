@@ -140,14 +140,14 @@ export function subscribeSessions(listener: () => void) {
 export function getSessionVersion() {
   return sessionVersion
 }
-export function sessionFor(record: Inspection) {
+export function sessionFor(record: Inspection, writer?: Writer) {
   const existing = sessions.get(record.id)
   if (existing) {
     const state = existing.getSnapshot()
     if (state.dirty || state.saving || state.record.revision >= record.revision)
       return existing
   }
-  const session = new DraftSession(record)
+  const session = new DraftSession(record, writer)
   sessions.set(record.id, session)
   return session
 }

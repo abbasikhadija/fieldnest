@@ -1,4 +1,4 @@
-# Synchronization protocol — design intent, not implemented
+# Synchronization protocol
 
 M0 contains no synchronization engine, queue, persistence or backend. This document establishes constraints for the detailed M3 design; it is not an implemented API contract.
 
@@ -17,3 +17,12 @@ Local demo inspection saving is now implemented with Dexie; the protocol above r
 
 ## M2 boundary
 Server inspection and assignment tables, constrained shared inspection_records and RLS now exist. The version column is reserved for the future version-checked protocol; M2 clients can only read. No processed-operation table, idempotency function, outbox, retry worker, record upload or conflict-resolution endpoint is implemented. Connected data is not stored in the demo database or automatically synchronized. M3 must define and test the complete mutation/acknowledgment contract before enabling any connected edits.
+
+## M3 implemented wire contract (designed before implementation)
+Account-scoped Dexie databases hold downloaded assignment context, the latest local record, local revision, server version, and an immutable outbox snapshot. A record has at most one in-flight operation; subsequent edits update the record and remain dirty until the previous acknowledgment advances its base version. Operations are UUIDs generated inside a local save transaction; retries never change their payload or ID. Device saves and queue creation are atomic. Acknowledgment transactions update the server snapshot/version, remove the exact operation, and enqueue newer local content against the acknowledged version. No successful sync label precedes that transaction.
+
+`apply_inspection_operation(operation_id uuid, inspection_id uuid, base_version integer, payload jsonb)` authenticates and checks current assignment on every call, including replay. Payload contains exactly answers, notes, status. A per-record row lock serializes writers; an account/operation advisory lock serializes duplicate deliveries. A private receipt table stores request and result indefinitely (no automatic pruning in M3). Identical replay returns the original accepted/conflict result; reuse with different input fails. Accepted mutations and receipts commit together. Conflict results contain the current server snapshot and stop that record while preserving the local snapshot. Manual comparison/resolution belongs to M4. Completed records cannot be edited; stale completion produces a conflict.
+
+Workers claim operations with a transactional 45-second lease, send at most 10 per pass, and use 20-second request deadlines. Failure persists bounded exponential backoff (1s–60s plus up to 25% jitter); permanent validation/authorization failures stop that operation visibly. Startup, online, visibility and explicit Sync trigger processing; a timer handles due retries while active. Other records continue after a failure. Leases are coordination, not correctness: duplicate requests remain safe server-side. Closing a tab leaves the durable operation retryable after lease expiry.
+
+Cached work can be opened offline only for the identity in the existing project-scoped Auth session, never an arbitrary account selector. This is a local convenience, not live authorization verification; server operations always reverify. Sign-out hides the workspace before awaiting Auth, retains unsynchronized data, and never clears a database. Reopening online refreshes clean records only; dirty/queued/conflicting content cannot be overwritten by downloads. Revoked access blocks uploads and retains recoverable local work. Shared-device/browser storage limitations remain explicit.

@@ -16,7 +16,7 @@ Storage errors keep your latest edits in the current tab with retry/download act
 
 Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
 
-M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment is connected to Supabase. The account owner confirmed private sign-in, assigned inspection access and sign-out; Email sign-in and disabled public signup were independently checked. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
+Connected accounts download assigned inspections, save drafts and complete cached work offline, then synchronize through a version-checked Supabase transaction. Device saves and server acceptance have separate status messages. Pending operations survive refresh and lost responses; demo records stay separate. Hosted M3 synchronization requires the new migration: see [backend setup](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization). Conflicts preserve both copies; manual resolution is the next milestone.
 
 ## Develop
 
@@ -57,4 +57,4 @@ M2 frontend deployment is verified: [GitHub Actions run 40174570852](https://git
 
 ## Engineering notes
 
-MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents future synchronization design intent. docs/BACKEND_SETUP.md explains Supabase configuration, private local test users and hosted setup. No server correctness is claimed from local tests.
+MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents the implemented synchronization contract. docs/BACKEND_SETUP.md explains Supabase configuration, private local test users and hosted setup. No server correctness is claimed from local tests.

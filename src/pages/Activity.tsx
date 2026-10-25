@@ -52,8 +52,9 @@ export function Activity() {
         </section>
       )}
       <p className="storage-note">
-        Demo records stay on this device. No records have been synchronized with
-        a server.
+        Demo records stay on this device. Demo records are never synchronized
+        with a server. Open the connected workspace to see your account’s
+        synchronization status.
       </p>
     </>
   )

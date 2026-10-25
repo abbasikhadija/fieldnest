@@ -4,6 +4,15 @@ import type { AuthPort } from './accountStore'
 export function supabaseAuth(client: SupabaseClient<Database>): AuthPort {
   return {
     async verify() {
+      if (!navigator.onLine) {
+        const { data } = await client.auth.getSession()
+        return data.session?.user
+          ? {
+              id: data.session.user.id,
+              email: data.session.user.email ?? 'Connected account',
+            }
+          : null
+      }
       const { data, error } = await client.auth.getUser()
       if (error?.name === 'AuthSessionMissingError') return null
       if (error) throw error

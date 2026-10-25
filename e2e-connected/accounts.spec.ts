@@ -35,8 +35,12 @@ test('real connected sign-in, shared records, cross-tab sign-out and demo isolat
     .click()
   await login(page, 0)
   await page.getByRole('button', { name: /12 Willow Court/ }).click()
-  await expect(page.getByText('Server draft · Version 1')).toBeVisible()
-  await expect(page.getByText('Not answered', { exact: true })).toHaveCount(8)
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Synchronized with server · Version 1' }),
+  ).toBeVisible()
+  await expect(page.getByRole('radio', { checked: true })).toHaveCount(0)
   const second = await context.newPage()
   await second.goto('./#/account')
   await expect(

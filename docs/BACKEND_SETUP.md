@@ -118,3 +118,16 @@ Do not run repair if history already contains that version or if the schema does
 
 ## Hosted setup accepted — 2026-10-25
 The account owner confirmed private sign-in, assigned Willow Court visibility, checklist access and successful sign-out on the deployed site. The hosted Auth settings endpoint independently confirmed Email enabled and public signup disabled. Hosted M2 setup is complete. Hosted second-user/unassigned-user scenarios were not separately exercised; those authorization scenarios passed against real disposable Supabase CI. Never treat historical pending-setup notes as instructions to recreate/reset this configured project.
+
+## M3 hosted upgrade (required before hosted synchronization)
+The existing hosted M2 project and its data must be preserved. The M3 frontend and disposable tests do not apply cloud migrations. No hosted M3 success is implied by a frontend deployment.
+
+Preferred dashboard path, requiring only the project owner's private dashboard access:
+1. Open project lxoknylvpjvqaqsdindf in Supabase Dashboard > SQL Editor.
+2. Check whether the RPC already exists: `select to_regprocedure('public.apply_inspection_operation(uuid,uuid,integer,jsonb)');`. If it exists, inspect the deployed definition/history before changing anything; do not blindly replay CREATE statements.
+3. If absent, run **only** `supabase/migrations/20261025000200_durable_sync.sql` in a transaction (`begin;` before its contents, `commit;` after). Do not replay the M2 foundation, seed, or reset data. This creates the private receipt table and authenticated RPC; existing records, assignments and direct-write restrictions remain intact.
+4. Privately sign in to the Pages connected workspace, refresh downloaded assignments, open an assigned draft, disconnect, answer/complete, and wait for the device-save indicator. Reload offline and reopen the record. Reconnect and choose Sync saved work; if setup was previously blocked, this explicitly retries the retained operation. Wait for Synchronized with server, then sign in on another authorized device to verify the same answers. Do not use production work for destructive tests. Keep private account credentials out of chat/Git.
+
+For CLI deployment, first follow the existing baseline schema/history verification and repair instructions above. After confirming the baseline exactly matches, apply `npx supabase db push --linked`. If you used SQL Editor for M3 too, verify its schema and mark version 20261025000200 applied only if CLI history lacks it; never execute it a second time blindly. No hosted link, history repair or migration was performed by the agent during M3 development.
+
+Local verification: start disposable Docker Supabase, apply migrations via `npx supabase db reset --local` **only on that disposable stack**, then `npm run test:auth`, `npm run seed:local`, `npm run build:local`, `npm run test:e2e:auth`. The browser suite creates and deletes unique fictional properties through a loopback-only fixture script. Local account fixture files and privileged local keys must stay ignored.

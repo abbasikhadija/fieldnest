@@ -6,16 +6,11 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { AccountStore, type AccountIdentity } from '../auth/accountStore'
+import { AccountStore } from '../auth/accountStore'
 import { supabaseAuth } from '../auth/supabaseAuth'
 import { createConfiguredClient } from '../remote/client'
-import type {
-  Database,
-  RemoteInspection,
-  RemoteRecord,
-} from '../remote/database.types'
-import { loadAssignments, loadRecord } from '../remote/inspections'
-import { sections } from '../domain/inspection'
+import type { Database } from '../remote/database.types'
+import { ConnectedWorkspace } from '../sync/ConnectedWorkspace'
 
 // Lazy-loaded with this route. An unconfigured backend never breaks local demo.
 let client: SupabaseClient<Database> | null = null
@@ -96,8 +91,8 @@ function ConnectedAccount({ client }: { client: SupabaseClient<Database> }) {
   return (
     <>
       <div className="demo-notice">
-        Connected workspace · Separate from local demo records. Server records
-        are read-only in this release.
+        Connected workspace · Separate from local demo records. Downloaded
+        records can be saved on this device and synchronized with the server.
       </div>
       {state.message && (
         <p className="account-message" role="status">
@@ -119,22 +114,11 @@ function ConnectedAccount({ client }: { client: SupabaseClient<Database> }) {
               Sign out
             </button>
           </div>
-          {online ? (
-            <AccountRecords
-              client={client}
-              user={state.user}
-              key={state.user.id}
-            />
-          ) : (
-            <div className="form-panel">
-              <h2>A connection is needed.</h2>
-              <p>
-                Connected assignments are not cached on this device in this
-                release. Reconnect to verify your account and retrieve them. The
-                separate local demo supports offline inspections.
-              </p>
-            </div>
-          )}
+          <ConnectedWorkspace
+            client={client}
+            user={state.user}
+            key={state.user.id}
+          />
         </>
       ) : state.logoutFailed ? (
         <button className="button" onClick={() => void store.signOut()}>
@@ -177,219 +161,11 @@ function ConnectedAccount({ client }: { client: SupabaseClient<Database> }) {
         </form>
       )}
       <p className="storage-note">
-        Sign-out hides connected records and preserves local demo drafts. This
-        release keeps connected inspection data in memory only; your browser
-        retains the login session until sign-out. Browser storage is not strong
-        protection on a shared or compromised device. No server editing or
-        synchronization is available yet.
+        Sign-out hides connected records and preserves pending device work and
+        local demo drafts. Browser storage is not strong protection on a shared
+        or compromised device. Offline access uses the last locally stored
+        account session; reconnect to verify current access.
       </p>
-    </>
-  )
-}
-function AccountRecords({
-  client,
-  user,
-}: {
-  client: SupabaseClient<Database>
-  user: AccountIdentity
-}) {
-  const [records, setRecords] = useState<RemoteInspection[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-  const [retry, setRetry] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [selected, setSelected] = useState<RemoteInspection | null>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-    loadAssignments(client, user.id, page * 25, controller.signal)
-      .then((items) => {
-        if (!controller.signal.aborted) {
-          setRecords((previous) =>
-            page === 0
-              ? items
-              : [
-                  ...previous,
-                  ...items.filter(
-                    (item) =>
-                      !previous.some((existing) => existing.id === item.id),
-                  ),
-                ],
-          )
-          setHasMore(items.length === 25)
-        }
-      })
-      .catch((failure) => {
-        if (!controller.signal.aborted)
-          setError(
-            failure instanceof Error
-              ? failure.message
-              : 'Could not load assignments.',
-          )
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
-      })
-    return () => controller.abort()
-  }, [client, user.id, page, retry])
-  if (selected)
-    return (
-      <ServerRecord
-        client={client}
-        user={user}
-        inspection={selected}
-        onBack={() => setSelected(null)}
-      />
-    )
-  return (
-    <section className="work-section">
-      <div className="section-heading">
-        <h2>Assigned to you</h2>
-        <span className="subtle">From the server</span>
-      </div>
-      {error && (
-        <div className="error-panel" role="alert">
-          <p>{error}</p>
-          <button
-            className="button"
-            onClick={() => setRetry((value) => value + 1)}
-          >
-            Retry loading
-          </button>
-        </div>
-      )}
-      <div className="inspection-list">
-        {records.map((record) => (
-          <button
-            className="inspection-card remote-card"
-            key={record.id}
-            onClick={() => setSelected(record)}
-          >
-            <div className="property-copy">
-              <span className="eyebrow">{record.kind}</span>
-              <h3>{record.property}</h3>
-              <p>{record.address}</p>
-              <span className="status-pill">
-                {record.due_on ? `Due ${record.due_on}` : 'No due date'}
-              </span>
-            </div>
-            <span aria-hidden="true">→</span>
-          </button>
-        ))}
-      </div>
-      {loading && <p role="status">Loading authorized assignments…</p>}
-      {!loading && !error && records.length === 0 && (
-        <div className="empty-state">
-          <h3>No assignments yet.</h3>
-          <p>Your administrator can assign inspections to this account.</p>
-        </div>
-      )}
-      {hasMore && !loading && !error && (
-        <button
-          className="button secondary"
-          onClick={() => setPage((value) => value + 1)}
-        >
-          Load more assignments
-        </button>
-      )}
-    </section>
-  )
-}
-function ServerRecord({
-  client,
-  user,
-  inspection,
-  onBack,
-}: {
-  client: SupabaseClient<Database>
-  user: AccountIdentity
-  inspection: RemoteInspection
-  onBack: () => void
-}) {
-  const [record, setRecord] = useState<RemoteRecord | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [retry, setRetry] = useState(0)
-  useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(false)
-    setRecord(null)
-    loadRecord(client, user.id, inspection.id, controller.signal)
-      .then((value) => {
-        if (!controller.signal.aborted) setRecord(value)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setError(true)
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
-      })
-    return () => controller.abort()
-  }, [client, user.id, inspection.id, retry])
-  return (
-    <>
-      <button className="text-button" onClick={onBack}>
-        ← Assigned inspections
-      </button>
-      <section className="form-panel">
-        <p className="eyebrow">Server record · Read-only</p>
-        <h2>{inspection.property}</h2>
-        <p>{inspection.address}</p>
-        {loading ? (
-          <p role="status">Loading authorized record…</p>
-        ) : error ? (
-          <div role="alert">
-            <p>
-              Could not load this record. It may be unavailable or your access
-              may have changed.
-            </p>
-            <button
-              className="button"
-              onClick={() => setRetry((value) => value + 1)}
-            >
-              Retry loading record
-            </button>
-          </div>
-        ) : !record ? (
-          <p>No inspection record is available to this account.</p>
-        ) : (
-          <>
-            <span className="status-pill">
-              {record.status === 'completed'
-                ? 'Completed on server'
-                : 'Server draft'}{' '}
-              · Version {record.version}
-            </span>
-            {sections.map((section) => (
-              <div className="review-section" key={section.title}>
-                <h3>{section.title}</h3>
-                <dl>
-                  {section.questions.map((question) => (
-                    <div key={question.id}>
-                      <dt>{question.label}</dt>
-                      <dd>
-                        {{ pass: 'Pass', fail: 'Fail', na: 'Not applicable' }[
-                          record.answers[question.id] as 'pass' | 'fail' | 'na'
-                        ] ?? 'Not answered'}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            ))}
-            <h3>Additional observations</h3>
-            <p className="remote-notes">
-              {record.notes || 'No observations recorded.'}
-            </p>
-            <p className="subtle">
-              Updated {new Date(record.updated_at).toLocaleString()}
-            </p>
-          </>
-        )}
-      </section>
     </>
   )
 }

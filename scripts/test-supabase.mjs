@@ -5,6 +5,7 @@ import { localSupabase } from './local-supabase.mjs'
 const { admin, anonymous } = localSupabase()
 const users = []
 const clients = []
+let syncFixture
 let passed = 0
 const check = async (name, operation) => {
   await operation()
@@ -35,12 +36,10 @@ try {
       assert.ifError(verified.error)
       assert.equal(verified.data.user.id, data.user.id)
     })
-    const assignment = await admin
-      .from('inspection_assignments')
-      .insert({
-        inspection_id: index < 2 ? shared : restricted,
-        user_id: data.user.id,
-      })
+    const assignment = await admin.from('inspection_assignments').insert({
+      inspection_id: index < 2 ? shared : restricted,
+      user_id: data.user.id,
+    })
     assert.ifError(assignment.error)
   }
   for (let index = 0; index < clients.length; index++) {
@@ -88,11 +87,18 @@ try {
   await check('anonymous HTTP reads are denied', async () => {
     assert.ok((await anonymous().from('inspections').select('*')).error)
   })
-  await check('public email signup is disabled while existing users can sign in', async () => {
-    const result = await anonymous().auth.signUp({ email: `blocked-${randomUUID()}@example.test`, password: `${randomBytes(24).toString('base64url')}aA9!` })
-    if (result.data.user) await admin.auth.admin.deleteUser(result.data.user.id)
-    assert.ok(result.error, 'Public signup must be rejected')
-  })
+  await check(
+    'public email signup is disabled while existing users can sign in',
+    async () => {
+      const result = await anonymous().auth.signUp({
+        email: `blocked-${randomUUID()}@example.test`,
+        password: `${randomBytes(24).toString('base64url')}aA9!`,
+      })
+      if (result.data.user)
+        await admin.auth.admin.deleteUser(result.data.user.id)
+      assert.ok(result.error, 'Public signup must be rejected')
+    },
+  )
   await check('wrong passwords are rejected by real Auth', async () => {
     assert.ok(
       (
@@ -109,6 +115,84 @@ try {
       .insert({ inspection_id: randomUUID(), answers: { walls: 'maybe' } })
     assert.equal(response.error?.code, '23514')
   })
+  await check(
+    'real RPC retries and second-user retrieval use committed server versions',
+    async () => {
+      syncFixture = randomUUID()
+      assert.ifError(
+        (
+          await admin
+            .from('inspections')
+            .insert({
+              id: syncFixture,
+              property: 'RPC fixture',
+              address: 'Fictional',
+              kind: 'Routine condition inspection',
+            })
+        ).error,
+      )
+      assert.ifError(
+        (
+          await admin
+            .from('inspection_records')
+            .insert({ inspection_id: syncFixture })
+        ).error,
+      )
+      assert.ifError(
+        (
+          await admin
+            .from('inspection_assignments')
+            .insert(
+              users
+                .slice(0, 2)
+                .map((user) => ({
+                  inspection_id: syncFixture,
+                  user_id: user.id,
+                })),
+            )
+        ).error,
+      )
+      const args = {
+        operation_id: randomUUID(),
+        inspection_id: syncFixture,
+        base_version: 1,
+        payload: {
+          answers: { walls: 'pass' },
+          notes: 'Real HTTP mutation',
+          status: 'draft',
+        },
+      }
+      const accepted = await clients[0].rpc('apply_inspection_operation', args)
+      assert.ifError(accepted.error)
+      assert.equal(accepted.data.kind, 'accepted')
+      const retry = await clients[0].rpc('apply_inspection_operation', args)
+      assert.ifError(retry.error)
+      assert.deepEqual(retry.data, accepted.data)
+      const remote = await clients[1]
+        .from('inspection_records')
+        .select('*')
+        .eq('inspection_id', syncFixture)
+        .single()
+      assert.ifError(remote.error)
+      assert.equal(remote.data.version, 2)
+      assert.equal(remote.data.notes, 'Real HTTP mutation')
+      const conflict = await clients[1].rpc('apply_inspection_operation', {
+        ...args,
+        operation_id: randomUUID(),
+      })
+      assert.ifError(conflict.error)
+      assert.equal(conflict.data.kind, 'conflict')
+      assert.equal(
+        (
+          await clients[2].rpc('apply_inspection_operation', {
+            ...args,
+            operation_id: randomUUID(),
+          })
+        ).error?.code,
+        '42501',
+      )
+    },
+  )
   await check('real Auth sign-out removes this client session', async () => {
     assert.ifError((await clients[0].auth.signOut({ scope: 'local' })).error)
     assert.ok((await clients[0].auth.getUser()).error)
@@ -116,6 +200,8 @@ try {
   })
   console.log(`${passed} real Supabase Auth/PostgREST integration tests passed`)
 } finally {
+  if (syncFixture)
+    await admin.from('inspections').delete().eq('id', syncFixture)
   for (const client of clients) await client.auth.signOut({ scope: 'local' })
   for (const user of users) {
     const { error } = await admin.auth.admin.deleteUser(user.id)

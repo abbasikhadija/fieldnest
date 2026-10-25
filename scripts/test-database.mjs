@@ -5,6 +5,7 @@ import path from 'node:path'
 import net from 'node:net'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
+import { verifySynchronization } from '../tests/database/synchronization.mjs'
 import { verifyAuthorization } from '../tests/database/authorization.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
@@ -108,8 +109,12 @@ try {
   await client.query(
     await read('supabase/migrations/20261025000100_inspection_foundation.sql'),
   )
+  await client.query(
+    await read('supabase/migrations/20261025000200_durable_sync.sql'),
+  )
   await client.query(await read('supabase/seed.sql'))
   await verifyAuthorization(client)
+  await verifySynchronization(client)
 } catch (error) {
   console.error(
     error instanceof Error

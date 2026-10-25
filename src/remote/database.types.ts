@@ -20,12 +20,12 @@ export interface RemoteRecord {
   completed_at: string | null
 }
 type Table<Row> = {
-  Row: Row
+  Row: { [K in keyof Row]: Row[K] }
   Insert: Partial<Row>
   Update: Partial<Row>
   Relationships: []
 }
-// Schema contract for the checked-in M2 migration; keep in step with migrations.
+// Schema contract for the checked-in migrations; keep in step with migrations.
 export interface Database {
   public: {
     Tables: {
@@ -38,7 +38,17 @@ export interface Database {
       }>
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      apply_inspection_operation: {
+        Args: {
+          operation_id: string
+          inspection_id: string
+          base_version: number
+          payload: import('../domain/synchronization').Payload
+        }
+        Returns: import('../domain/synchronization').Acknowledgment
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

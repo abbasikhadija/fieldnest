@@ -50,9 +50,16 @@ export function SystemNotice() {
               <Link
                 className="text-link"
                 key={session.getSnapshot().record.id}
-                to={`/inspection/${session.getSnapshot().record.id}`}
+                to={
+                  session.getSnapshot().record.id.startsWith('connected:')
+                    ? '/account'
+                    : `/inspection/${session.getSnapshot().record.id}`
+                }
               >
-                Recover {session.getSnapshot().record.property}
+                Recover{' '}
+                {session.getSnapshot().record.id.startsWith('connected:')
+                  ? 'connected work (sign in)'
+                  : session.getSnapshot().record.property}
               </Link>
             ))}
         </div>
