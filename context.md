@@ -72,3 +72,9 @@ Installed portable GitHub CLI 2.103.2 from the official cli/cli GitHub release i
 Revalidation executed this session: npm run typecheck passed; npm run lint passed; npm test passed (2 tests); npm run build passed (11 precache entries, ~297.59 KiB); npm run test:e2e passed (4 tests). No new milestone is claimed complete. M0 code remains unchanged and verified; only setup documentation changed. This setup update is committed as `docs: record GitHub CLI setup and authentication blocker`. No origin exists and no push occurred.
 
 Next action: in PowerShell add $env:LOCALAPPDATA\FieldnestTools\bin to PATH and run `gh auth login --hostname github.com --web`, then follow README repository/Pages commands. After login, a future session can continue authorized setup, inspect any existing repository before attaching it, and verify actual deployment with FIELDNEST_BASE_URL. Never overwrite an existing repository or force-push.
+
+## Repository connected and pushed — 2026-10-25
+
+User created https://github.com/abbasikhadija/fieldnest (renamed from feildnest). Verified the remote had no refs before attaching it as origin. Git HTTPS authentication was available independently of GitHub CLI; `git push -u origin main` succeeded and `git ls-remote origin refs/heads/main` confirmed commit 8745e4c6e2bed7dc79007d68ff597d156bcbab06. No history was overwritten. The earlier no-origin/no-push blocker is resolved.
+
+Next step: user selects GitHub Actions as the deployment source in repository Settings > Pages. Then inspect the workflow run and verify the actual live site and deployed-origin browser tests. Deployment is not yet verified. No application code changed or tests rerun in this repository-connection step. M1 remains blocked as instructed.
