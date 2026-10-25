@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { compareCopies } from '../domain/conflict'
 import type { Database } from '../remote/database.types'
@@ -19,6 +19,8 @@ export function ConflictReview({
   userId: string
   disabled: boolean
 }) {
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => { heading.current?.focus() }, [])
   const [choice, setChoice] = useState<'device' | 'server' | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [busy, setBusy] = useState(navigator.onLine)
@@ -80,7 +82,7 @@ export function ConflictReview({
   return (
     <section className="conflict-review" aria-labelledby="conflict-heading">
       <p className="eyebrow">Needs your review</p>
-      <h2 id="conflict-heading" tabIndex={-1}>
+      <h2 id="conflict-heading" ref={heading} tabIndex={-1}>
         Review conflicting changes
       </h2>
       <p role="alert">

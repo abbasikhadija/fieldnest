@@ -36,3 +36,7 @@
 - M5: Keep the existing idempotent RPC/queue; recover uncertain server outcomes by replaying the same UUID rather than generating replacement writes. Surface acknowledgment-storage failure separately and isolate per-record persistence failures within each bounded pass.
 - M5: Explicit Sync may bring scheduled retries forward but cannot steal live leases or restart conflicts. Compare exact lease deadlines on late failures; accept immutable valid receipts after lease expiry. Preserve refreshed conflict snapshots against late receipt replay.
 - M5: Validate repeated lost responses, reload and competing tabs plus acknowledgment quota failure against disposable real Supabase. Keep production credentials/data out of failure injection; no new dependency or database migration.
+
+- M6: Use the existing queue due-time index; native browser measurement showed idle scans loading 1,000 delayed payloads unnecessarily. Preserve lease/block/version guards and test candidate selection without a schema migration.
+- M6: Lazy-load secondary local pages while precaching all chunks. This reduces initial code execution with a small increase in total offline cache; measured tradeoffs are documented rather than claiming a universal startup gain.
+- M6: Add axe-core only as a dev/test dependency, retain all WCAG rules and correct contrast findings. Pair scans with keyboard/320px workflow checks; do not claim full accessibility conformance or physical-device validation.

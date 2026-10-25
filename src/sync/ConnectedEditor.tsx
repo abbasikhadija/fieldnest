@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   sections,
   missingQuestions,
@@ -22,6 +22,9 @@ export function ConnectedEditor({
   client: SupabaseClient<Database>
   userId: string
 }) {
+  const heading = useRef<HTMLHeadingElement>(null)
+  const conflicting = value.state === 'conflict'
+  useEffect(() => { if (!conflicting) heading.current?.focus() }, [conflicting])
   const source: Inspection = {
     ...value.inspection,
     id: `connected:${db.name}:${value.id}`,
@@ -127,7 +130,7 @@ export function ConnectedEditor({
   return (
     <section className="form-panel">
       <p className="eyebrow">Connected inspection</p>
-      <h2>{value.inspection.property}</h2>
+      <h2 ref={heading} tabIndex={-1}>{value.inspection.property}</h2>
       <p>{value.inspection.address}</p>
       <p role="status">
         {state.saving
@@ -208,6 +211,8 @@ export function ConnectedEditor({
       <label htmlFor="connected-notes">Additional observations</label>
       <textarea
         id="connected-notes"
+        rows={5}
+        aria-describedby="connected-notes-help"
         disabled={locked}
         maxLength={5000}
         value={state.record.notes}
@@ -218,6 +223,7 @@ export function ConnectedEditor({
           )
         }
       />
+      <p id="connected-notes-help" className="subtle">Optional · Up to 5,000 characters. Changes save automatically on this device.</p>
       <div className="form-actions">
         <button className="button secondary" onClick={download}>
           Download device copy

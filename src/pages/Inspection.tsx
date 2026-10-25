@@ -1,5 +1,5 @@
 import { useInspections } from '../persistence/useInspections'
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { DownloadDraft, StorageError } from '../components/LocalData'
 import {
@@ -40,6 +40,16 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
   const [, forceRender] = useState(0)
   const current = state.record
   const completed = current.status === 'completed'
+  const heading = useRef<HTMLHeadingElement>(null)
+  const propertyHeading = useRef<HTMLHeadingElement>(null)
+  const firstSection = useRef(true)
+  useEffect(() => {
+    if (firstSection.current) {
+      firstSection.current = false
+      propertyHeading.current?.focus()
+    }
+    else heading.current?.focus()
+  }, [sectionIndex, review, completed])
   const missing = missingQuestions(current.answers)
   const section = sections[sectionIndex]
   return (
@@ -50,7 +60,7 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
       <div className="page-heading">
         <div>
           <p className="eyebrow">{current.kind} · Fictional property</p>
-          <h1>{current.property}</h1>
+          <h1 ref={propertyHeading} tabIndex={-1}>{current.property}</h1>
           <p>{current.address}</p>
         </div>
         <span className="badge">Local demo</span>
@@ -157,7 +167,7 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
       {!completed && !review ? (
         <section className="form-panel">
           <div className="section-heading">
-            <h2>{section.title}</h2>
+            <h2 ref={heading} tabIndex={-1}>{section.title}</h2>
             <span className="subtle">All checks required</span>
           </div>
           <p className="form-help">
@@ -229,7 +239,7 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
         </section>
       ) : (
         <section className="form-panel">
-          <h2>
+          <h2 ref={heading} tabIndex={-1}>
             {completed ? 'Completed inspection' : 'Review your inspection'}
           </h2>
           <p className="form-help">
@@ -278,6 +288,7 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
               </label>
               <textarea
                 id="notes"
+                aria-describedby="notes-help"
                 rows={5}
                 maxLength={5000}
                 value={current.notes}
@@ -293,7 +304,7 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
                 }
                 placeholder="Describe any issues, including checks marked Fail…"
               />
-              <p className="subtle">
+              <p className="subtle" id="notes-help">
                 {current.notes.length}/5,000 characters · Saves automatically
               </p>
               {missing.length > 0 && (
@@ -301,6 +312,15 @@ function InspectionEditor({ record }: { record: InspectionRecord }) {
                   {missing.length} checks still need an answer. Return to their
                   sections to finish, or leave now and continue this draft
                   later.
+                  <ul className="missing-sections">
+                    {sections.map((item, index) => item.questions.some((question) => missing.some((entry) => entry.id === question.id)) && (
+                      <li key={item.title}>
+                        <button className="text-button" onClick={() => { setSectionIndex(index); setReview(false) }}>
+                          Finish {item.title.toLowerCase()}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               <div className="completion-note">

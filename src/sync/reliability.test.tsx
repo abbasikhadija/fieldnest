@@ -25,6 +25,18 @@ afterEach(async () => {
   await Promise.all(databases.splice(0).map((db) => db.delete()))
 })
 describe('M5 failure recovery', () => {
+  it('indexed queue selection skips future, blocked and actively leased work', async () => {
+    const { db } = await fixture()
+    const eligible = (await db.operations.toArray())[0]
+    await db.operations.bulkAdd([
+      { ...eligible, id: crypto.randomUUID(), inspectionId: crypto.randomUUID(), nextAttempt: 5000 },
+      { ...eligible, id: crypto.randomUUID(), inspectionId: crypto.randomUUID(), nextAttempt: -2, blocked: true },
+      { ...eligible, id: crypto.randomUUID(), inspectionId: crypto.randomUUID(), nextAttempt: -1, leaseUntil: 45000 },
+    ])
+    expect((await db.claim('indexed-worker', 0))?.id).toBe(eligible.id)
+    expect(await db.claim('second-worker', 0)).toBeNull()
+    expect(await db.operations.count()).toBe(4)
+  })
   it.each([false, true])('isolates acknowledgment storage failure even if retry metadata also fails: %s', async (metadataFails) => {
     const { db, id } = await fixture()
     const good = (await db.records.get(id))!

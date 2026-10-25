@@ -4,17 +4,18 @@ import { Icon } from './components/Icon'
 import { SystemNotice } from './components/SystemNotice'
 import { SkipLink } from './components/SkipLink'
 import { Work } from './pages/Work'
-import { About } from './pages/About'
-import { Inspection } from './pages/Inspection'
-import { Activity } from './pages/Activity'
-import { Settings } from './pages/Settings'
 
 const Account = lazy(() => import('./pages/Account'))
+const About = lazy(() => import('./pages/About').then((page) => ({ default: page.About })))
+const Inspection = lazy(() => import('./pages/Inspection').then((page) => ({ default: page.Inspection })))
+const Activity = lazy(() => import('./pages/Activity').then((page) => ({ default: page.Activity })))
+const Settings = lazy(() => import('./pages/Settings').then((page) => ({ default: page.Settings })))
 
 const links = [
   { to: '/', label: 'My work', icon: 'work' },
   { to: '/activity', label: 'Activity', icon: 'activity' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
+  { to: '/account', label: 'Account', icon: 'home' },
 ] as const
 export function App() {
   const location = useLocation()

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { test, expect, type Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 for (const failure of ['lost-responses', 'device-storage'] as const) {
   test(`${failure}: retained work recovers without duplicate server effects`, async ({ page, context }) => {
@@ -18,6 +19,8 @@ for (const failure of ['lost-responses', 'device-storage'] as const) {
       await page.getByLabel('Password', { exact: true }).fill(accounts[0].password)
       await page.getByRole('button', { name: 'Sign in', exact: true }).click()
       await open(page)
+      const accessibility = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+      expect(accessibility.violations.map(({ id }) => id)).toEqual([])
       await page.evaluate(async () => { await navigator.serviceWorker.ready })
       await context.setOffline(true)
       await page.getByLabel('Additional observations').fill('M5 retained inspection')
@@ -56,6 +59,14 @@ for (const failure of ['lost-responses', 'device-storage'] as const) {
         await page.evaluate(() => (window as unknown as { restoreRecordPut: () => void }).restoreRecordPut())
       } else {
         await expect.poll(() => versions.length, { timeout: 20000 }).toBeGreaterThanOrEqual(3)
+        let redundantReads = 0
+        await context.route('**/rest/v1/inspection_records?**', async (route) => {
+          if (new URL(route.request().url()).searchParams.get('inspection_id') === `eq.${fixture.id}`) redundantReads++
+          await route.continue()
+        })
+        await page.getByRole('button', { name: 'Refresh downloaded assignments', exact: true }).click()
+        await expect(page.getByRole('status').filter({ hasText: 'Loading authorized assignments' })).toHaveCount(0)
+        expect(redundantReads).toBe(0)
         await context.setOffline(true)
         await page.reload()
         await open(page)

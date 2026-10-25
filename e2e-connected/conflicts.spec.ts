@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { test, expect, type Page } from '@playwright/test'
+import AxeBuilder from '@axe-core/playwright'
 
 for (const choice of ['device', 'server'] as const) {
   test(`two accounts review a conflict and keep the ${choice} copy safely`, async ({
@@ -126,6 +127,8 @@ for (const choice of ['device', 'server'] as const) {
         name: choice === 'device' ? /Apply my device copy/ : /Use server copy/,
       })
       await expect(decision).toBeEnabled()
+      const accessibility = await new AxeBuilder({ page: second }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+      expect(accessibility.violations.map(({ id, nodes }) => ({ id, elements: nodes.map((node) => node.target) }))).toEqual([])
       await second.screenshot({
         path: `test-results/m4-conflict-${test.info().project.name}.png`,
         fullPage: true,

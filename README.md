@@ -62,3 +62,5 @@ MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provi
 For interrupted synchronization, scheduled retries and device-storage failures, see [failure recovery checks](docs/RELIABILITY.md). Saved requests retain their identity across retries; a server result is only confirmed after device acknowledgment processing succeeds.
 
 M5 failure recovery is verified in [run 40227573927](https://github.com/abbasikhadija/fieldnest/actions/runs/40227573927): 75 unit tests, 37 PostgreSQL tests, 14 real Supabase API tests, 12 connected browser cases and 12 standard browser regressions passed before deployment. Tests cover repeated lost responses, interrupted requests, acknowledgment-storage failures, partial success and competing tabs. No additional hosted migration is required.
+
+M6 improves mobile readability, keyboard navigation, contrast, missing-answer recovery and initial route loading. [UX review and measurements](docs/UX_REVIEW.md) documents the screen review, reproducible browser benchmark, measured queue improvement and accessibility limits. Run npm run measure:ui after a production build to collect local reference measurements.

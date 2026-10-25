@@ -31,7 +31,7 @@ export default function Account() {
         <div>
           <p className="eyebrow">Connected account</p>
           <h1>Your assigned inspections</h1>
-          <p>Sign in to view the work assigned to your account.</p>
+          <p>Download your work, save on this device, and sync when connected.</p>
         </div>
       </div>
       {client ? (

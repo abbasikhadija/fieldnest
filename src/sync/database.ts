@@ -248,10 +248,10 @@ export class ConnectedDatabase extends Dexie {
   }
   async claim(owner: string, now: number) {
     return this.transaction('rw', this.operations, this.records, async () => {
-      const operation = (await this.operations.toArray()).find(
-        (item) =>
-          !item.blocked && item.nextAttempt <= now && item.leaseUntil <= now,
-      )
+      const operation = await this.operations
+        .where('nextAttempt').belowOrEqual(now)
+        .filter((item) => !item.blocked && item.leaseUntil <= now)
+        .first()
       if (!operation) return null
       const claimed = { ...operation, owner, leaseUntil: now + 45_000 }
       await this.operations.put(claimed)

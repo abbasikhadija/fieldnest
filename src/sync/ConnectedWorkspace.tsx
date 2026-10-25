@@ -48,9 +48,11 @@ export function ConnectedWorkspace({
   useEffect(() => {
     worker.start()
     let alive = true
+    let refreshing = false
     const controller = new AbortController()
     const refresh = async () => {
-      if (!navigator.onLine) return
+      if (!navigator.onLine || refreshing) return
+      refreshing = true
       setLoading(true)
       try {
         // Bound each download pass. Further assignments are available explicitly.
@@ -62,6 +64,11 @@ export function ConnectedWorkspace({
         )
         for (const inspection of assignments) {
           if (!alive) break
+          const cached = await db.records.get(inspection.id)
+          // Refresh cannot replace pending/conflicting copies; avoid fetching them.
+          if (cached && (cached.dirty || cached.state !== 'synced')) continue
+          if (pendingSessions().some((session) => session.getSnapshot().record.id ===
+              `connected:${db.name}:${inspection.id}`)) continue
           const record = await loadRecord(
             client,
             user.id,
@@ -89,6 +96,7 @@ export function ConnectedWorkspace({
             'Could not refresh assignments. Downloaded device copies are still available.',
           )
       } finally {
+        refreshing = false
         if (alive) setLoading(false)
       }
     }
@@ -144,6 +152,8 @@ export function ConnectedWorkspace({
       </div>
       <button
         className="text-button"
+        disabled={loading}
+        aria-busy={loading}
         onClick={() => setRefreshKey((value) => value + 1)}
       >
         Refresh downloaded assignments
