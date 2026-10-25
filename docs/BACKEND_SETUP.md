@@ -94,3 +94,24 @@ build:local reads only the local URL and anon key into the frontend build. The c
 
 ## M2 verification evidence
 GitHub Actions run https://github.com/abbasikhadija/fieldnest/actions/runs/40174570852 passed all gates and deployed the frontend. It actually ran 12 Supabase Auth/PostgREST tests plus 2 connected-browser tests against its disposable stack. The public site also passed 12 default desktop/mobile regression tests. This does not configure or verify a hosted Supabase project; complete the hosted steps above before claiming production account access. In local config, auth.enable_signup=false blocks public registration while auth.email.enable_signup=true keeps existing-user email sign-in enabled; this combination is intentional and covered by the real Auth suite.
+
+## Current hosted project setup
+Project lxoknylvpjvqaqsdindf is now connected to the Pages frontend using GitHub Actions variables. The user applied the initial migration and fictional seed manually in SQL Editor and reported success. The first private user was assigned Willow Court. Deployment run 40178545469 succeeded, all 12 public-site regression tests passed, and the configured sign-in form was independently verified. Authorized hosted sign-in and record access still require the user's private test; no passwords should be sent through chat.
+
+At the last check, Email sign-in was enabled but public signup was still enabled. Disable Allow new users to sign up under Authentication > Sign In / Providers, without disabling the Email provider, and save if shown. Then privately verify the assigned account sees Willow Court, an unassigned account sees no records, and sign-out hides server records.
+
+Because the initial hosted migration was applied manually, do not rerun its CREATE statements with db push. Before a future CLI migration, link to the project and inspect migration history:
+
+```powershell
+npx supabase login
+npx supabase link --project-ref lxoknylvpjvqaqsdindf
+npx supabase migration list --linked
+```
+
+Only after verifying that the hosted baseline matches the checked-in initial SQL, if version 20261025000100 is absent from the remote history, record it without reapplying schema:
+
+```powershell
+npx supabase migration repair 20261025000100 --status applied --linked
+```
+
+Do not run repair if history already contains that version or if the schema does not match. Investigate drift first. No repair/reset has been performed during this setup, and no privileged database password was provided to the agent.

@@ -16,7 +16,7 @@ Storage errors keep your latest edits in the current tab with retry/download act
 
 Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
 
-M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment needs external Supabase project configuration before connected accounts are usable. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
+M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment is connected to a hosted Supabase project; private-user sign-in and assignment verification are still pending. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
 
 ## Develop
 
