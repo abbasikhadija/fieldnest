@@ -15,3 +15,10 @@
 - M1: Use local revision checks to prevent a dirty tab overwriting a newer local record. On rejection retain edits, offer JSON download and require confirmation before discarding them. This supports local integrity without implementing the later server conflict milestone.
 - M1: Complete only after flushing valid answers; completed demo records are immutable review copies. Fail is an acceptable finding and Not applicable is an explicit answer.
 - M1: Provide JSON export and an opt-in persistent-storage request, with honest eviction/deletion/private-browsing limitations. Exports have no in-app import yet. Never add a destructive reset as automatic storage recovery.
+
+- M2: Use invitation/administrator-provisioned password accounts and assignee relationships. No public sign-up, shared public login or tenant/organization framework.
+- M2: Connected records are online-only/read-only and held in memory. This meets the database/auth foundation without introducing an incomplete synchronization mechanism. Demo data stays in its existing isolated Dexie database; later connected caches must be account-scoped.
+- M2: Deny all direct browser writes, including self-assignment. Schema constraints still validate trusted administrative writes. M3 must add version-checked transactional mutation functions rather than loosen table grants.
+- M2: Verify identity with Auth getUser; invalidate records immediately on auth events, defer network verification outside the callback lock and reject late responses. Hide private records even when a logout request fails. Never delete demo drafts during logout.
+- M2: Run native PostgreSQL RLS tests without Docker when available, and independently run real Supabase Auth/PostgREST tests in Docker-capable CI. Neither mocked HTTP nor a minimal auth.uid interface alone is proof of end-to-end authentication.
+- M2: Inject only project URL and publishable/legacy anon key through Vite/GitHub variables. Validate before bundling to catch accidentally configured service-role/secret keys. Privileged test keys stay inside disposable local test scripts and are not printed or exposed to frontend builds.

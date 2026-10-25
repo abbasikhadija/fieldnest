@@ -16,7 +16,7 @@ Storage errors keep your latest edits in the current tab with retry/download act
 
 Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
 
-Connected accounts, real assignments and server synchronization are not implemented. M1 adds the local workflow; M2 introduces Supabase/PostgreSQL authentication and authorization.
+M2 adds a separate connected workspace with password sign-in and read-only authorized server assignments. The public deployment needs external Supabase project configuration before connected accounts are usable. See [backend setup](docs/BACKEND_SETUP.md) for exact local and hosted instructions. Connected editing, offline account caches and synchronization are reserved for M3; the local demo remains fully usable without credentials.
 
 ## Develop
 
@@ -33,16 +33,17 @@ Open http://127.0.0.1:5173/fieldnest/. No credentials are needed for the demo. `
 npm run typecheck
 npm run lint
 npm test
+npm run test:db
 npm run build
 npx playwright install chromium
 npm run test:e2e
 ```
 
-Unit tests cover local transactions, save acknowledgment/recovery and validation. Browser tests exercise desktop/mobile forms, offline refresh/completion, injected storage failure, navigation and two-tab stale drafts. The suite runs against the production build under /fieldnest/.
+Unit tests cover local transactions, save acknowledgment/recovery, auth identity races and validation. The real PostgreSQL suite tests SQL constraints and RLS. Docker-capable CI also starts actual Supabase Auth/PostgREST and tests password sign-in, shared assignments, unauthorized access and browser sign-out/account isolation. Browser tests exercise desktop/mobile forms, offline refresh/completion, injected storage failure, navigation and two-tab stale drafts. The suite runs against the production build under /fieldnest/.
 
 ## Deployment
 
-GitHub Pages uses GitHub Actions as its source. Pushes to main verify types, lint, unit tests, production build and browser tests before deploying. Pull requests only verify. Hash routes avoid server rewrites. The manifest, service worker and static assets are scoped to /fieldnest/. No backend is hosted on Pages.
+GitHub Pages uses GitHub Actions as its source. Pushes to main verify types, lint, unit tests, production build and browser tests before deploying. Pull requests only verify. Deployment also requires the real Supabase integration job to pass. Hash routes avoid server rewrites. The manifest, service worker and static assets are scoped to /fieldnest/. No backend is hosted on Pages. Supabase project URL and publishable/legacy anon key can be set as GitHub Actions repository variables; privileged keys are rejected before bundling.
 
 To test the actual deployed version from PowerShell:
 
@@ -56,4 +57,4 @@ M1 deployment is verified: [GitHub Actions run 40172186264](https://github.com/a
 
 ## Engineering notes
 
-MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents future synchronization design intent. No server correctness is claimed from local tests.
+MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents future synchronization design intent. docs/BACKEND_SETUP.md explains Supabase configuration, private local test users and hosted setup. No server correctness is claimed from local tests.

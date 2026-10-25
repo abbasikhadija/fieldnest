@@ -116,6 +116,12 @@ export function Work() {
           </div>
         </section>
       )}
+      <p className="storage-note">
+        Have an assigned inspection?{' '}
+        <Link className="text-link" to="/account">
+          Open connected workspace →
+        </Link>
+      </p>
       <aside className="quiet-note">
         <Icon name="leaf" />
         <div>

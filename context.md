@@ -3,44 +3,50 @@
 Updated 2026-10-25 (Asia/Karachi).
 
 ## Current milestone
-M1 — Usable Inspection Interface and Local Persistence: complete, deployed and verified at https://abbasikhadija.github.io/fieldnest/. GitHub Actions run 40172186264 succeeded for implementation commit 2e55a6c39b7f5afb19e5fc650a213316358fe70e. All 10 browser tests also passed against the live origin. M0 remains complete. No M2 work has started.
+M2 — Real Database, Authentication, and Authorization: implementation locally verified. Hosted Supabase setup is not configured. Real local Supabase Auth/PostgREST and connected browser tests are committed for Docker-capable CI, with results pending the implementation push. No M3 synchronization work has begun. Do not claim hosted sign-in is available until its external setup is completed and verified.
 
-## Implemented functionality
-- Explicit Try Fieldnest initializes three fictional local demo properties atomically, only once.
-- My work shows inspection status and checklist progress. Property details open a four-section, eight-check predefined form with optional observations and final review.
-- Choices save immediately; notes use a 250 ms trailing debounce. Serial session writes coalesce intervening edits. Success appears only after Dexie acknowledges the transaction.
-- Drafts persist through refresh/reopening storage. Available inspections can be edited and completed offline after static resources are cached.
-- Missing answers prevent completion with actionable feedback. Completed demo records are immutable local review copies, not synchronized submissions.
-- Activity reflects latest acknowledged device records. Settings offers persistent-storage requests and JSON export, with clear browser storage limits.
-- Unsaved sessions survive route changes; failures retain memory, expose recovery links globally and offer retry/download. Browser exit warnings and PWA update protection reduce accidental loss of unacknowledged work.
-- Local revision checks reject stale tab writes without overwriting newer records. Retained stale drafts can be downloaded, then explicitly discarded to load the newer device copy.
+## Completed prior milestones
+M0 established and deployed the frontend/PWA foundation. M1 implemented the fictional local demo, fixed checklist, durable device drafts, review/completion and recovery. M1 commit 2e55a6c deployed successfully in Actions run 40172186264 and passed all 10 then-current deployed-origin browser tests. M1 verification documentation commit: 2aaeb84. Preserve that functionality.
 
-## Architecture and key paths
-src/domain/inspection.ts: checklist, models and validation.
-src/persistence/database.ts: Dexie schema v1, atomic demo seed and version-checked local writes.
-src/persistence/draftSession.ts: serialized autosave, debounce, acknowledgment and recovery across route changes.
-src/persistence/useInspections.ts: reactive acknowledged record queries.
-src/pages/: Work, Inspection, Activity, Settings and About.
-src/components/LocalData.tsx and SystemNotice.tsx: storage recovery, downloads, exit/update protection.
-e2e/inspection.spec.ts: complete browser workflows and failure scenarios.
+## M2 implementation
+- Optional Supabase configuration and lazy-loaded /account workspace. Missing backend configuration leaves the public local demo working and explains administrator setup.
+- Email/password sign-in, online getUser verification, auth change invalidation, stale-response protection and safe sign-out failure handling. Auth changes hide private identity synchronously before deferred verification; account views cancel pending requests and remount by verified user ID.
+- Paginated authorized assignment reads (25 per page) and read-only shared server record details. Runtime validation rejects malformed responses. Connected inspection data remains in memory only; no connected record cache or edits exist in M2. Demo IndexedDB sessions and unsaved work are never deleted on sign-out.
+- Supabase CLI local project configuration, versioned PostgreSQL migration, fictional seed properties and a local-only private user setup script. Two generated local test users share Willow Court; passwords stay in ignored .local/accounts.json, never frontend code or Git.
+- inspections, inspection_assignments and inspection_records tables; foreign keys, answer/notes/completion/version checks, assignment/due-date indexes and RLS. Assignees can read shared records and their own assignment rows. Anonymous access and all direct browser writes/self-assignment are denied.
+- Native PostgreSQL integration runner plus actual Supabase Auth/PostgREST and browser suites for Docker-capable CI. Deployment requires both the normal verification job and actual Supabase integration job to pass.
+- Browser-safe GitHub Actions variables supported. Vite rejects incomplete configuration, unsafe URLs and secret/service-role keys before bundling.
 
-fieldnest-demo-v1 is exclusively a fictional-demo database; M2 must create separate account-scoped caches. Local revision is not a server version. No Supabase client, authentication, SQL migration, remote queue, server sync or server conflict implementation exists. docs/ARCHITECTURE.md explains save timing, transactions, schema upgrade expectations and recovery. docs/SYNC_PROTOCOL.md remains future design intent.
+## Key paths
+supabase/config.toml; supabase/migrations/20261025000100_inspection_foundation.sql; supabase/seed.sql.
+src/auth/: verified identity lifecycle and Supabase adapter.
+src/remote/: config, schema contracts, validation and read APIs.
+src/pages/Account.tsx: separate online connected workspace.
+scripts/test-database.mjs; tests/database/: actual PostgreSQL RLS/constraint tests.
+scripts/test-supabase.mjs; scripts/seed-local.mjs; scripts/build-local.mjs; e2e-connected/: actual local Supabase integration/browser tests.
+docs/BACKEND_SETUP.md: exact local/hosted setup, private fixtures and security boundaries.
 
-## Verification executed for M1
-- npm install dexie dexie-react-hooks; npm install -D fake-indexeddb: succeeded, audit reported zero vulnerabilities.
+## Verification executed locally
+- Dependency installation succeeded; npm audit reported zero vulnerabilities.
 - npm run typecheck: passed.
-- npm run lint: passed with no warnings after separating the storage query hook from UI components.
-- npm test: passed, 13 tests across 3 files. Covers one-time/concurrent seeding, storage reopen, transactional rollback, stale revisions, validation, completion immutability, delayed save acknowledgment, coalescing/debounce, failed-save retry, failed completion and navigation.
-- npm run build: passed. Main JS ~125.59 KiB gzip; static precache 11 entries (~418.70 KiB).
-- npm run test:e2e: passed, 10 tests across desktop Chromium and mobile emulation. Covers /fieldnest/ assets/manifest/scope, offline reload, keyboard/direct routes, draft refresh recovery, immediate navigation, offline edits/completion, injected IndexedDB quota errors and two-tab stale-draft preservation/download/explicit discard.
-- Desktop work-list and mobile form screenshots visually reviewed (ignored artifacts in test-results).
-- Earlier test failures were an obsolete M0 copy assertion and an exact-text locator that included nested save-status explanation. Corrected the assertions; final tests were actually executed and passed.
+- npm run lint: passed, no warnings.
+- npm test: passed, 26 tests across 6 files. Includes existing local draft tests and new identity-race/sign-out/config/remote-validation checks.
+- npm run test:db: passed, 20 actual PostgreSQL 18.1 authorization/constraint tests. Runner used a temporary loopback cluster, applied real migration/seed, then shut it down and removed only that temporary directory. Its minimal auth.uid/role interface is not a substitute for actual Supabase Auth testing.
+- npm run build: passed; main JS ~125.79 KiB gzip, lazy account chunk ~62.82 KiB gzip, 12 static precache entries (~656.38 KiB).
+- npm run test:e2e: passed, 12 tests on desktop Chromium/mobile emulation, including full offline demo regressions and connected/demo workspace separation.
+- Production build with an intentionally invalid privileged-key fixture was rejected before bundling, as expected.
+- npm run test:auth: blocked locally because no Docker-compatible runtime/local Supabase stack is available. The earlier CLI path assumption was corrected to invoke the installed CLI's Node entry point; the remaining failure is the unavailable local stack, not a fabricated successful integration.
+- Connected browser suite is configured separately; it requires actual local Supabase and generated private fixtures. It has not yet been executed locally. CI execution evidence will be recorded after the push.
 
-## Limitations and known issues
-Only acknowledged IndexedDB writes survive refresh/crash. An unsaved in-memory buffer can be lost on forced close or mobile OS termination; beforeunload is best effort. Browser deletion/eviction, private browsing and device loss remain limits. Persistent storage is not a backup. JSON downloads have no in-app import. No destructive reset/cleanup is exposed. Real mobile hardware, Safari/Firefox and native PWA installation prompts have not been verified. No backend/database synchronization tests apply before M2/M3. No external setup is needed for the local demo.
+## Security and limitations
+Connected records are online-only/read-only in M2. They are not stored in the demo database, localStorage or a service-worker API cache. Supabase's login session persists under a project-scoped browser storage key; this does not provide strong confidentiality on shared/compromised devices. Sign-out hides records immediately and preserves demo drafts. Failed sign-out remains visibly blocked until retry.
+
+No remote edits, outbox, idempotent mutation function, retry engine or server conflict workflow exists. Server version is schema groundwork only. M1 browser storage/eviction/private-mode/device-loss limitations still apply. JSON demo exports have no in-app import. Real hardware, Safari/Firefox and native installation prompts remain unverified.
 
 ## Git and deployment
-main tracks origin/main at https://github.com/abbasikhadija/fieldnest.git. HTTPS pushes are authorized; no GitHub CLI login is necessary. Pages uses GitHub Actions. M0 deployment run 40171118430 succeeded for commit 80b1b90 and its four deployed-origin tests passed. Prior foundation commits include 3df8b26, 7bf352b and ccff88d. M1 implementation commit 2e55a6c (`feat: implement offline inspection drafts and local demo`) was committed and pushed. GitHub Actions run https://github.com/abbasikhadija/fieldnest/actions/runs/40172186264 completed successfully, including verify and deploy. The public origin returned HTTP 200 and served the verified M1 asset index-Bax8VXxB.js. With FIELDNEST_BASE_URL set to the live URL, npm run test:e2e passed all 10 desktop/mobile tests. Deployment evidence is recorded in the follow-up documentation commit; no functional changes followed the verified implementation. No force-push or history rewrite is authorized.
+main tracks origin/main at https://github.com/abbasikhadija/fieldnest.git; HTTPS pushes are authorized. M2 implementation commit will be named `feat: establish Supabase authentication and authorized inspections`. GitHub Pages remains the frontend host. CI has real PostgreSQL and disposable local Supabase verification gates. Hosted project credentials have not been supplied; no hosted database was created, migrated or accessed. No force-push or history rewrite is authorized.
 
-## Next milestone
-M2 — Real Database, Authentication, and Authorization. Begin only on a new instruction. Read MASTER_PROMPT.md and all project context first. Establish reproducible Supabase/PostgreSQL migrations, assignments, two authorized test users, Auth, RLS, input validation and actual database integration tests. Protect account-scoped caches and preserve unsynchronized work on sign-out. Do not implement server synchronization until M3.
+## External setup and next steps
+Follow docs/BACKEND_SETUP.md: create a private Supabase project, apply the checked-in migration using CLI login/link/db push (never reset production), disable public signup, create two private Auth users and assign a property, then set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY as GitHub Actions repository variables and redeploy. No privileged key belongs in a VITE_ variable or chat. Verify actual hosted sign-in, authorized reads, unassigned-user denial and logout before declaring hosted integration complete.
+
+Next development milestone after M2 external setup/verification: M3 — Durable Synchronization Engine. Begin only on a new instruction. Read MASTER_PROMPT.md, AGENTS.md and project docs first. Finalize the sync protocol and implement atomic/idempotent version-checked server processing, account-scoped local persistence, persistent operations, retries and durable acknowledgment handling with real failure tests. Do not begin M4 conflict resolution in that milestone.

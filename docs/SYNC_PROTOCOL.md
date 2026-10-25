@@ -14,3 +14,6 @@ Before M3 finalize operation schema, RPC/error contract, dependency ordering, qu
 
 ## M1 boundary
 Local demo inspection saving is now implemented with Dexie; the protocol above remains design intent for future connected mode. The local revision is a device-only concurrency token, not a server version. No operation identifiers, mutation queue, remote processing, acknowledgments or synchronization workers exist yet. Demo records never display server acceptance or pending-sync indicators. Detailed local save/recovery semantics are documented in ARCHITECTURE.md.
+
+## M2 boundary
+Server inspection and assignment tables, constrained shared inspection_records and RLS now exist. The version column is reserved for the future version-checked protocol; M2 clients can only read. No processed-operation table, idempotency function, outbox, retry worker, record upload or conflict-resolution endpoint is implemented. Connected data is not stored in the demo database or automatically synchronized. M3 must define and test the complete mutation/acknowledgment contract before enabling any connected edits.

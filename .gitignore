@@ -8,4 +8,7 @@ test-results/
 !.env.example
 *.local
 *.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
+.local/
 .DS_Store

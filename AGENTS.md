@@ -6,4 +6,6 @@ Build one explicitly requested milestone at a time. M0 ends at the foundation; d
 
 Commands: npm ci; npm run dev; npm run typecheck; npm run lint; npm test; npm run build; npm run test:e2e (install Chromium using npx playwright install chromium first).
 
+For M2+, read docs/BACKEND_SETUP.md. Run npm run test:db against isolated real PostgreSQL. Docker-capable environments also run npm run test:auth; npm run seed:local; npm run build:local; npm run test:e2e:auth against the disposable local Supabase stack. Never run test bootstrap SQL against production, publish generated .local accounts, or expose service-role/secret keys. Connected writes and synchronization remain reserved for M3.
+
 Before completion run relevant checks, verify /fieldnest/ production assets, update context.md with actual results and outstanding work, and commit intentionally. Do not claim unexecuted checks or unverified deployment. Never overwrite a remote or force-push. Future record changes must use Dexie transactions, account-scoped data and acknowledged local writes. Design synchronization before implementing it.

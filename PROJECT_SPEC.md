@@ -12,3 +12,6 @@ Later acceptance follows MASTER_PROMPT.md M1–M7, including refresh recovery, r
 
 ## M1 acceptance
 Visitors explicitly start a fictional local demo, browse property assignments, fill the predefined checklist, save incomplete drafts, review missing answers and complete an inspection. Acknowledged drafts and completed records must survive refresh and reopening storage. Offline use is supported after the application is cached. UI identifies local-only records and never invents server synchronization. Storage failures preserve unsaved memory with recovery actions; stale tabs cannot silently replace saved data. The next milestone remains M2; no backend functionality is part of M1.
+
+## M2 acceptance and boundary
+Supabase Auth verifies connected accounts online. Assignees can retrieve their inspections and shared server records; unassigned/anonymous users cannot access them. SQL constraints validate records, and direct client mutations (including self-assignment) are denied. Local setup supplies two private users sharing a property for future concurrency scenarios. Real PostgreSQL and actual Supabase Auth/PostgREST tests verify the foundation. Connected editing/offline caching and synchronization remain outside M2. Production account access requires the external hosted setup described in docs/BACKEND_SETUP.md.

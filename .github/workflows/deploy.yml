@@ -12,6 +12,19 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: fieldnest-disposable-test
+          POSTGRES_DB: fieldnest_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,16 +35,47 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:db
+        env:
+          FIELDNEST_TEST_DATABASE_URL: postgresql://postgres:fieldnest-disposable-test@127.0.0.1:5432/fieldnest_test
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           path: dist
+  verify-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start disposable local Supabase
+        run: |
+          mkdir -p .local
+          npx supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor > .local/supabase-start.log 2>&1
+      - run: npm run test:auth
+      - run: npm run seed:local
+      - run: npm run build:local
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:auth
+      - name: Inspect container status on failure
+        if: failure()
+        run: docker ps -a
+      - name: Stop disposable local Supabase
+        if: always()
+        run: npx supabase stop --no-backup
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: verify
+    needs: [verify, verify-auth]
     runs-on: ubuntu-latest
     permissions:
       pages: write

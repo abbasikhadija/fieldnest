@@ -35,3 +35,15 @@ Playwright exercises built desktop/mobile workflows: subpath assets, manifest/sc
 
 ## Next boundaries
 M2 introduces Supabase authentication, PostgreSQL schema, migrations and RLS with actual database integration tests. M3 introduces the documented transactional sync protocol. Neither is implemented in M1.
+
+## M2: authentication and authorized server reads
+
+The /account route is lazy-loaded and uses Supabase JS password authentication. Configuration is optional; missing configuration leaves the offline demo fully functional and explains the administrator setup requirement. Vite validates the URL and key before bundling, rejecting incomplete/unsafe configuration and privileged keys. The client persists its auth session in a project-scoped key and uses getUser for online identity verification.
+
+src/auth/accountStore.ts invalidates private identity synchronously on Auth changes and schedules verification outside the Auth callback lock. Epoch checks ignore stale verification responses. The Account data view is keyed by verified user ID, aborts old requests and disappears before sign-out awaits a network operation. Failed sign-out does not reopen prior account data. Connected records are kept only in memory, not cached persistently. No connected writes/unsynchronized drafts exist in M2. Demo storage and editing sessions remain untouched on sign-out.
+
+src/remote/ holds typed schema contracts, runtime response validation, project configuration and paginated authorized read functions. The M2 workspace retrieves at most 25 assignments per page and reads individual records on demand. Connected inspection views are read-only and require online verification; cached/offline connected work belongs to the synchronization milestone. Workbox continues caching only static build resources.
+
+supabase/migrations/20261025000100_inspection_foundation.sql creates inspections, per-user assignments and shared inspection_records with version/answer/completion constraints. RLS grants only assignee reads and self-assignment visibility; anonymous reads and all browser writes are denied. A private, fixed-search-path security-definer helper avoids recursive assignment policies. Administration is via trusted Supabase tools, not frontend credentials. Indexes support assignee lookup and due-date pagination. Auth users belong to Supabase; no passwords are stored in application tables.
+
+The native PostgreSQL runner tests real SQL/RLS/transaction behavior with a minimal auth context interface. A separate local Supabase suite verifies real Auth sign-in/sign-out and PostgREST authorization. CI runs both before deployment. Native tests do not pretend to verify Auth token issuance. docs/BACKEND_SETUP.md contains local Docker setup, private development users, SQL verification and exact hosted setup steps. Hosted credentials remain external configuration. No M3 mutation queue or synchronization RPC is implemented.

@@ -19,7 +19,8 @@ export function About() {
           Try Fieldnest from My work to inspect fictional properties. Answer the
           checklist, save incomplete drafts, and return after a refresh—even
           offline once the app is cached. Demo records stay on this device.
-          Connected accounts and server synchronization are not available yet.
+          Connected accounts can read assigned server records when a backend is
+          configured. Server editing and synchronization are not available yet.
         </p>
         <Link className="button secondary" to="/">
           Back to my work <Icon name="arrow" size={18} />

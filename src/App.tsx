@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { Icon } from './components/Icon'
 import { SystemNotice } from './components/SystemNotice'
@@ -9,6 +9,8 @@ import { Inspection } from './pages/Inspection'
 import { Activity } from './pages/Activity'
 import { Settings } from './pages/Settings'
 
+const Account = lazy(() => import('./pages/Account'))
+
 const links = [
   { to: '/', label: 'My work', icon: 'work' },
   { to: '/activity', label: 'Activity', icon: 'activity' },
@@ -17,7 +19,7 @@ const links = [
 export function App() {
   const location = useLocation()
   useEffect(() => {
-    document.title = `Fieldnest · ${links.find((link) => link.to === location.pathname)?.label ?? 'Preview'}`
+    document.title = `Fieldnest · ${links.find((link) => link.to === location.pathname)?.label ?? (location.pathname === '/account' ? 'Connected account' : 'Inspection')}`
     document.getElementById('main')?.focus()
   }, [location.pathname])
   return (
@@ -31,7 +33,11 @@ export function App() {
           fieldnest<span className="brand-dot">.</span>
         </Link>
         <span className="header-note">Your work. Saved wherever you are.</span>
-        <span className="preview-label">Local demo</span>
+        <span className="preview-label">
+          {location.pathname === '/account'
+            ? 'Connected account'
+            : 'Local demo'}
+        </span>
       </header>
       <div className="layout">
         <nav className="navigation" aria-label="Main navigation">
@@ -50,24 +56,27 @@ export function App() {
         <div className="main-wrap">
           <SystemNotice />
           <main id="main" tabIndex={-1}>
-            <Routes>
-              <Route path="/" element={<Work />} />
-              <Route path="/activity" element={<Activity />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/inspection/:id" element={<Inspection />} />
-              <Route path="/about" element={<About />} />
-              <Route
-                path="*"
-                element={
-                  <div className="empty-state">
-                    <h1>That page isn’t here.</h1>
-                    <Link className="button" to="/">
-                      Back to my work
-                    </Link>
-                  </div>
-                }
-              />
-            </Routes>
+            <Suspense fallback={<p role="status">Opening workspace…</p>}>
+              <Routes>
+                <Route path="/account" element={<Account />} />
+                <Route path="/" element={<Work />} />
+                <Route path="/activity" element={<Activity />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/inspection/:id" element={<Inspection />} />
+                <Route path="/about" element={<About />} />
+                <Route
+                  path="*"
+                  element={
+                    <div className="empty-state">
+                      <h1>That page isn’t here.</h1>
+                      <Link className="button" to="/">
+                        Back to my work
+                      </Link>
+                    </div>
+                  }
+                />
+              </Routes>
+            </Suspense>
           </main>
           <footer className="page-footer">
             <span>FIELDNEST</span>

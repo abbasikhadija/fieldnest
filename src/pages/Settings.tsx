@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useInspections } from '../persistence/useInspections'
 import { useState } from 'react'
 import { DownloadDraft, StorageError } from '../components/LocalData'
@@ -14,6 +15,16 @@ export function Settings() {
         </div>
       </div>
       <section className="form-panel">
+        <h2>Connected account</h2>
+        <p>
+          Sign in to retrieve assignments from your inspection administrator.
+          This is separate from the local demo.
+        </p>
+        <Link className="button secondary" to="/account">
+          Open connected workspace
+        </Link>
+      </section>
+      <section className="form-panel storage-panel">
         <h2>Local demo</h2>
         <p>
           This workspace contains fictional properties. No account is required

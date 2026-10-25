@@ -1,0 +1,122 @@
+import assert from 'node:assert/strict'
+import { randomBytes, randomUUID } from 'node:crypto'
+import { localSupabase } from './local-supabase.mjs'
+
+const { admin, anonymous } = localSupabase()
+const users = []
+const clients = []
+let passed = 0
+const check = async (name, operation) => {
+  await operation()
+  console.log(`PASS ${name}`)
+  passed++
+}
+try {
+  const shared = '10000000-0000-4000-8000-000000000001'
+  const restricted = '10000000-0000-4000-8000-000000000002'
+  for (let index = 0; index < 3; index++) {
+    const email = `fieldnest-test-${randomUUID()}@example.test`
+    const password = `${randomBytes(24).toString('base64url')}aA9!`
+    const { data, error } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+    assert.ifError(error)
+    users.push(data.user)
+    const client = anonymous()
+    clients.push(client)
+    await check(`real Auth sign-in for inspector ${index + 1}`, async () => {
+      const { data: session, error: loginError } =
+        await client.auth.signInWithPassword({ email, password })
+      assert.ifError(loginError)
+      assert.equal(session.user.id, data.user.id)
+      const verified = await client.auth.getUser()
+      assert.ifError(verified.error)
+      assert.equal(verified.data.user.id, data.user.id)
+    })
+    const assignment = await admin
+      .from('inspection_assignments')
+      .insert({
+        inspection_id: index < 2 ? shared : restricted,
+        user_id: data.user.id,
+      })
+    assert.ifError(assignment.error)
+  }
+  for (let index = 0; index < clients.length; index++) {
+    await check(
+      `PostgREST RLS for authenticated inspector ${index + 1}`,
+      async () => {
+        const expected = index < 2 ? shared : restricted
+        const properties = await clients[index].from('inspections').select('id')
+        assert.ifError(properties.error)
+        assert.deepEqual(properties.data, [{ id: expected }])
+        const records = await clients[index]
+          .from('inspection_records')
+          .select('inspection_id')
+        assert.ifError(records.error)
+        assert.deepEqual(records.data, [{ inspection_id: expected }])
+        const forbidden = await clients[index]
+          .from('inspection_records')
+          .select('*')
+          .eq('inspection_id', index < 2 ? restricted : shared)
+        assert.ifError(forbidden.error)
+        assert.deepEqual(forbidden.data, [])
+      },
+    )
+  }
+  await check(
+    'authenticated HTTP requests cannot self-assign or overwrite',
+    async () => {
+      assert.ok(
+        (
+          await clients[0]
+            .from('inspection_assignments')
+            .insert({ inspection_id: restricted, user_id: users[0].id })
+        ).error,
+      )
+      assert.ok(
+        (
+          await clients[0]
+            .from('inspection_records')
+            .update({ notes: 'forged' })
+            .eq('inspection_id', shared)
+        ).error,
+      )
+    },
+  )
+  await check('anonymous HTTP reads are denied', async () => {
+    assert.ok((await anonymous().from('inspections').select('*')).error)
+  })
+  await check('wrong passwords are rejected by real Auth', async () => {
+    assert.ok(
+      (
+        await anonymous().auth.signInWithPassword({
+          email: users[0].email,
+          password: 'incorrect-password',
+        })
+      ).error,
+    )
+  })
+  await check('real server validation rejects malformed answers', async () => {
+    const response = await admin
+      .from('inspection_records')
+      .insert({ inspection_id: randomUUID(), answers: { walls: 'maybe' } })
+    assert.equal(response.error?.code, '23514')
+  })
+  await check('real Auth sign-out removes this client session', async () => {
+    assert.ifError((await clients[0].auth.signOut({ scope: 'local' })).error)
+    assert.ok((await clients[0].auth.getUser()).error)
+    assert.ok((await clients[0].from('inspections').select('*')).error)
+  })
+  console.log(`${passed} real Supabase Auth/PostgREST integration tests passed`)
+} finally {
+  for (const client of clients) await client.auth.signOut({ scope: 'local' })
+  for (const user of users) {
+    const { error } = await admin.auth.admin.deleteUser(user.id)
+    if (error) {
+      console.error('Could not remove a disposable local test user.')
+      process.exitCode = 1
+    }
+  }
+}
