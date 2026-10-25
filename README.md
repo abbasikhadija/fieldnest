@@ -13,46 +13,23 @@ Browser tests: `npx playwright install chromium`, then `npm run test:e2e`. These
 
 No environment values are required for M0. `.env.example` reserves browser-safe Supabase configuration for M2. Never use secret/service-role credentials in Vite variables.
 
-## GitHub Pages setup
+## Live application and deployment
 
-GitHub CLI is installed locally at `%LOCALAPPDATA%\FieldnestTools\bin\gh.exe` (official release archive, SHA-256 checked). Add it to the current PowerShell session's PATH:
+Open [Fieldnest](https://abbasikhadija.github.io/fieldnest/). M0 is deployed and verified; this is a foundation preview, with inspection editing and local drafts planned for M1.
 
-```powershell
-$env:Path = "$env:LOCALAPPDATA\FieldnestTools\bin;$env:Path"
-gh --version
-```
+The [public repository](https://github.com/abbasikhadija/fieldnest) is configured with GitHub Actions as its Pages source. Pushes to main run dependency installation, type checking, lint, unit tests, production build and Chromium tests before deploying. Pull requests run verification only. Do not recreate the repository or change Pages to branch-based deployment.
 
-On another machine, install GitHub CLI first using its official installer or `winget install --id GitHub.cli --exact`.
+[Deployment run 40171118430](https://github.com/abbasikhadija/fieldnest/actions/runs/40171118430) succeeded. The deployed origin returned HTTP 200 and passed all four desktop/mobile browser checks, including offline reload, asset paths, service-worker scope and keyboard navigation. Real-device installation prompts have not been verified.
 
-Run the following in this directory (repository creation intentionally fails if that name already exists; stop and inspect any failure before continuing):
+Run the same suite against the live site from PowerShell:
 
 ```powershell
-Set-Location C:\Users\User\feildnest
-gh auth login --hostname github.com --web
-gh auth status
-gh repo create fieldnest --public --source=. --remote=origin --push
-$owner = gh api user --jq .login
-gh api --method POST "repos/$owner/fieldnest/pages" -f build_type=workflow
-gh workflow run deploy.yml
-gh run list --workflow deploy.yml
-```
-
-If Pages is already configured, inspect its settings rather than creating it again. The repository must use **Settings → Pages → Source → GitHub Actions**. Wait for the workflow to succeed, then verify `https://<github-username>.github.io/fieldnest/` and navigation/offline reload on that origin. No live deployment is claimed yet.
-
-If you already own a `fieldnest` repository, do not rerun creation or force-push. Inspect `gh repo view "$owner/fieldnest"` and `git remote -v`, compare histories, and attach it only after confirming it is the intended repository.
-
-After deployment, run the same desktop/mobile browser suite against the live origin:
-
-```powershell
-$owner = gh api user --jq .login
-$env:FIELDNEST_BASE_URL = "https://$owner.github.io/fieldnest/"
+$env:FIELDNEST_BASE_URL = 'https://abbasikhadija.github.io/fieldnest/'
 npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-This mode does not start a local preview server. It checks actual deployed assets, manifest and service-worker scope, hash routing, keyboard navigation and offline reload. Record the URL, Actions run and actual test results in context.md; a successful local run alone does not verify deployment.
-
-The workflow checks types, lint, unit tests, build and Chromium tests before deployment. Hash routes work without server rewrites. All static assets, manifest and service-worker scope target `/fieldnest/`.
+This mode does not start a local preview server. Hash routes require no server rewrites. All static assets, manifest and service-worker scope target `/fieldnest/`.
 
 ## Engineering notes
 

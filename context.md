@@ -3,7 +3,7 @@
 Updated 2026-10-25 (Asia/Karachi).
 
 ## Milestone
-M0 implementation and local verification complete. GitHub CLI is now installed locally but is not authenticated. Public repository creation, push and live Pages deployment remain pending GitHub sign-in. The user explicitly confirmed that M1 must remain blocked until GitHub setup is finished. No M1 work started. Do not describe live deployment as complete.
+M0 complete, including verified GitHub Pages deployment at https://abbasikhadija.github.io/fieldnest/. GitHub Actions run 40171118430 succeeded for commit 80b1b90. All four production browser tests passed against the actual deployed origin. No M1 work started; begin M1 only on a new development instruction.
 
 ## Implemented
 - React/TypeScript/Vite, Tailwind v4, responsive brand and application shell.
@@ -24,17 +24,17 @@ Hash routes avoid GitHub Pages server rewrite requirements. Only static assets a
 - npm test: passed, 2 unit tests.
 - npm run build: passed; service worker generated with 11 precache entries (~297 KiB), main JS ~87 KiB gzip.
 - npx playwright install chromium: successful.
-- npm run test:e2e: passed, 2 production tests (desktop Chromium and mobile emulation). Verified /fieldnest/ startup, hash navigation, manifest start URL/scope, both icon responses, registered service-worker scope, cached offline reload, offline notice, settings navigation and horizontal overflow.
+- npm run test:e2e: passed, 4 production tests (desktop Chromium and mobile emulation), locally and against the live deployment. Verified /fieldnest/ startup, hash navigation, manifest start URL/scope, both icon responses, registered service-worker scope, cached offline reload, offline notice, settings navigation, horizontal overflow, keyboard skip link and direct-route reload.
 - npm run dev: starts successfully at http://127.0.0.1:5173/fieldnest/.
 - Desktop/mobile screenshots visually reviewed. Screenshots and browser output are ignored local verification artifacts.
 
-An early check ran before installation finished and could not find tsc; all listed final checks were rerun after installation. No database/sync tests apply in M0. No real mobile device, installation prompt, deployed-origin PWA or live GitHub Actions run has been verified.
+An early check ran before installation finished and could not find tsc; all listed final checks were rerun after installation. No database/sync tests apply in M0. Live GitHub Actions and deployed-origin offline reload are now verified. Real mobile devices and installation prompts remain unverified.
 
 ## Git and deployment
-Project repository initialized on main. The implementation is committed as `chore: initialize Fieldnest M0 foundation`; inspect git log for the exact hash. No origin is configured; no push occurred. GitHub CLI 2.103.2 is installed at C:\Users\User\AppData\Local\FieldnestTools\bin\gh.exe; auth status confirms no signed-in GitHub hosts. No public repository or live site was created. README.md contains exact PATH/sign-in commands and commands to create the public fieldnest repository without overwriting an existing one, enable Actions-based Pages and dispatch the workflow.
+Project repository is on main, tracking origin/main at https://github.com/abbasikhadija/fieldnest.git. Pushes succeed using Git HTTPS authentication independently of GitHub CLI. The user created the repository and selected GitHub Actions as the Pages source. Deployment run https://github.com/abbasikhadija/fieldnest/actions/runs/40171118430 succeeded for commit 80b1b90; public HTML returned HTTP 200 and all four live-origin tests passed. Earlier runs failed at configure-pages before hosting was enabled. No history was overwritten.
 
 ## Remaining setup and next steps
-Authenticate the installed GitHub CLI, run README setup commands, wait for successful Actions deployment, verify the actual public /fieldnest/ URL and offline behavior on its origin, then record the evidence here. M0 deployment acceptance remains pending until that succeeds.
+No external setup remains for M0. Future pushes to main run verification and deploy through GitHub Actions. Do not recreate the repository or repeat hosting setup. The entries below are historical session notes; the status above supersedes their earlier deployment blockers.
 
 Next development milestone: M1 — Usable Inspection Interface and Local Persistence. Begin only when explicitly requested. Read the master prompt and all project context first; implement fictional demo data, predefined checklist, versioned Dexie persistence, reliable save acknowledgment, refresh recovery, validation and relevant failure tests. Do not build synchronization in M1.
 
