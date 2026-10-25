@@ -10,6 +10,7 @@ import { SyncWorker } from './worker'
 import { pendingSessions } from '../persistence/draftSession'
 import { ConnectedEditor } from './ConnectedEditor'
 import { syncLabel } from './status'
+import { RetryStatus } from './RetryStatus'
 
 export function ConnectedWorkspace({
   client,
@@ -132,6 +133,7 @@ export function ConnectedWorkspace({
             void db
               .retryBlocked()
               .then(() => worker.run())
+              .then(() => setMessage(''))
               .catch(() =>
                 setMessage('Could not sync. Check device storage and retry.'),
               )
@@ -162,6 +164,7 @@ export function ConnectedWorkspace({
         </button>
       )}
       {message && <p role="status">{message}</p>}
+      <RetryStatus db={db} records={records ?? []} />
       {storageError && (
         <p role="alert">
           Device storage is unavailable. Keep unsaved work open and download a

@@ -222,11 +222,16 @@ export class ConnectedDatabase extends Dexie {
       blocked: false,
     })
   }
-  async retryBlocked() {
+  async retryBlocked(now = Date.now()) {
     await this.transaction('rw', this.records, this.operations, async () => {
       for (const operation of await this.operations.toArray()) {
         const record = await this.records.get(operation.inspectionId)
-        if (operation.blocked && record?.state === 'blocked') {
+        if (
+          record &&
+          record.state !== 'conflict' &&
+          operation.leaseUntil <= now &&
+          (record.state === 'blocked' || !operation.blocked)
+        ) {
           await this.operations.update(operation.id, {
             blocked: false,
             nextAttempt: 0,
@@ -282,6 +287,12 @@ export class ConnectedDatabase extends Dexie {
       )
         throw new Error('Invalid server acknowledgment.')
       if (acknowledgment.kind === 'conflict') {
+        // A late replay cannot replace a newer snapshot already under review.
+        if (
+          local.state === 'conflict' &&
+          local.remote &&
+          local.remote.version >= acknowledgment.record.version
+        ) return
         await this.operations.update(operation.id, {
           blocked: true,
           owner: undefined,
@@ -324,7 +335,12 @@ export class ConnectedDatabase extends Dexie {
   ) {
     await this.transaction('rw', this.records, this.operations, async () => {
       const current = await this.operations.get(operation.id)
-      if (!current || current.owner !== operation.owner) return
+      if (
+        !current ||
+        current.owner !== operation.owner ||
+        current.leaseUntil !== operation.leaseUntil ||
+        current.blocked
+      ) return
       const attempts = current.attempts + 1
       const delay =
         Math.min(60_000, 1000 * 2 ** Math.min(attempts - 1, 6)) *

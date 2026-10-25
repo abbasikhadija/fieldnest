@@ -32,3 +32,7 @@
 - M4: Resolve whole records with explicit device/server choices, not automatic/per-field merging. Display answer/notes/status differences and version-labelled server context before making the decision concrete.
 - M4: Add an account-scoped recovery history in Dexie v2. Archive local/server copies and the stopped operation in the same transaction as the decision. Retain copies across retries, reloads and sign-out; expose export without automatic pruning or restoration.
 - M4: Reuse M3 RPC version checks and generate a fresh operation UUID for each reviewed local submission. Local revision and reviewed-version guards prevent stale-tab decisions. Completed server records cannot be overwritten. No new cloud migration is necessary.
+
+- M5: Keep the existing idempotent RPC/queue; recover uncertain server outcomes by replaying the same UUID rather than generating replacement writes. Surface acknowledgment-storage failure separately and isolate per-record persistence failures within each bounded pass.
+- M5: Explicit Sync may bring scheduled retries forward but cannot steal live leases or restart conflicts. Compare exact lease deadlines on late failures; accept immutable valid receipts after lease expiry. Preserve refreshed conflict snapshots against late receipt replay.
+- M5: Validate repeated lost responses, reload and competing tabs plus acknowledgment quota failure against disposable real Supabase. Keep production credentials/data out of failure injection; no new dependency or database migration.
