@@ -58,3 +58,5 @@ M4 conflict resolution is implemented: compare saved device/server copies, choos
 ## Engineering notes
 
 MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents the implemented synchronization contract. docs/BACKEND_SETUP.md explains Supabase configuration, private local test users and hosted setup. Server guarantees are exercised by actual PostgreSQL and disposable Supabase tests; browser mocks alone do not establish them.
+
+For interrupted synchronization, scheduled retries and device-storage failures, see [failure recovery checks](docs/RELIABILITY.md). Saved requests retain their identity across retries; a server result is only confirmed after device acknowledgment processing succeeds.

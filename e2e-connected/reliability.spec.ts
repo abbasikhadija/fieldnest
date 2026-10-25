@@ -70,7 +70,17 @@ for (const failure of ['lost-responses', 'device-storage'] as const) {
         await other.getByRole('button', { name: 'Sync saved work', exact: true }).click()
       }
       await page.getByRole('button', { name: 'Sync saved work', exact: true }).click()
-      await expect(page.getByRole('status').filter({ hasText: 'Synchronized with server' })).toBeVisible({ timeout: 20000 })
+      // Cross-tab Auth events can remount the account view back at assignments.
+      // Reopen the saved record while retaining the same success requirement.
+      await expect(async () => {
+        const assignment = page.getByRole('button', { name: new RegExp(fixture.property) })
+        if (await assignment.isVisible()) await assignment.click()
+        await expect(page.getByRole('status').filter({ hasText: 'Synchronized with server' })).toBeVisible()
+      }).toPass({ timeout: 20000 }).catch(async (error: unknown) => {
+        // Only fictional fixture content; never log Auth tokens or passwords.
+        console.info('Recovery state:', await page.locator('main').innerText(), { versions, attempts: ids.length })
+        throw error
+      })
       expect(new Set(ids).size).toBe(1)
       expect(versions.length).toBeGreaterThanOrEqual(2)
       expect(versions.every((version) => version === 2)).toBe(true)
