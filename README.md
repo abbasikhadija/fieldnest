@@ -53,7 +53,7 @@ npm run test:e2e
 Remove-Item Env:FIELDNEST_BASE_URL
 ```
 
-M3 frontend deployment is verified: [GitHub Actions run 40180760002](https://github.com/abbasikhadija/fieldnest/actions/runs/40180760002) passed strict checks, 40 unit tests, 34 real PostgreSQL tests, 13 actual Supabase Auth/API tests and four connected desktop/mobile browser tests before deployment. All 12 standard browser regressions also passed independently against the public site. Offline completion, lost-response replay and retrieval by a second authorized account were tested against disposable Supabase. The hosted project still needs the new M3 migration before cloud synchronization; see [upgrade instructions](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization).
+M3 frontend deployment is verified: [GitHub Actions run 40183528823](https://github.com/abbasikhadija/fieldnest/actions/runs/40183528823) passed strict checks, 56 unit tests, 34 real PostgreSQL tests, 13 actual Supabase Auth/API tests and four connected desktop/mobile browser tests before deployment. All 12 standard browser regressions also passed independently against the public site. Offline completion, lost-response replay and retrieval by a second authorized account were tested against disposable Supabase. The hosted project still needs the new M3 migration before cloud synchronization; see [upgrade instructions](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization).
 
 ## Engineering notes
 
