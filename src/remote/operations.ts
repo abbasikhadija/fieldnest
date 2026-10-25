@@ -1,3 +1,4 @@
+import { verifiedAccountToken } from './accountRequest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 import type { Acknowledgment, Operation } from '../sync/database'
@@ -9,9 +10,14 @@ export async function sendOperation(
   operation: Operation,
   signal: AbortSignal,
 ): Promise<Acknowledgment> {
-  const { data: identity, error: identityError } = await client.auth.getUser()
-  if (identityError || identity.user?.id !== userId)
-    throw new SyncFailure('Reconnect and sign in to sync your saved work.')
+  let accessToken: string
+  try {
+    accessToken = await verifiedAccountToken(client, userId)
+  } catch {
+    throw new SyncFailure(
+      'Your account changed or expired. Reconnect and sign in to sync your saved work.',
+    )
+  }
   if (signal.aborted) throw new Error('Request expired')
   const { data, error } = await client
     .rpc('apply_inspection_operation', {
@@ -20,6 +26,7 @@ export async function sendOperation(
       base_version: operation.baseVersion,
       payload: operation.payload,
     })
+    .setHeader('Authorization', `Bearer ${accessToken}`)
     .abortSignal(signal)
   if (error)
     throw new SyncFailure(

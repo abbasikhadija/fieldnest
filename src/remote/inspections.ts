@@ -1,3 +1,4 @@
+import { verifiedAccountToken } from './accountRequest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { missingQuestions, validateDraft } from '../domain/inspection'
 import type { Database, RemoteInspection, RemoteRecord } from './database.types'
@@ -45,26 +46,17 @@ export function validateRemoteRecord(value: RemoteRecord) {
     throw new Error('The server returned an incomplete completed record.')
   return value
 }
-async function verifyUser(
-  client: SupabaseClient<Database>,
-  expectedId: string,
-) {
-  const { data, error } = await client.auth.getUser()
-  if (error || data.user?.id !== expectedId)
-    throw new Error(
-      'Your account changed or expired. Sign in again to load assignments.',
-    )
-}
 export async function loadAssignments(
   client: SupabaseClient<Database>,
   userId: string,
   offset = 0,
   signal?: AbortSignal,
 ) {
-  await verifyUser(client, userId)
+  const accessToken = await verifiedAccountToken(client, userId)
   let query = client
     .from('inspections')
     .select('*')
+    .setHeader('Authorization', `Bearer ${accessToken}`)
     .order('due_on', { ascending: true })
     .order('id')
     .range(offset, offset + 24)
@@ -82,10 +74,11 @@ export async function loadRecord(
   id: string,
   signal?: AbortSignal,
 ) {
-  await verifyUser(client, userId)
+  const accessToken = await verifiedAccountToken(client, userId)
   let query = client
     .from('inspection_records')
     .select('*')
+    .setHeader('Authorization', `Bearer ${accessToken}`)
     .eq('inspection_id', id)
   if (signal) query = query.abortSignal(signal)
   const { data, error } = await query.maybeSingle()

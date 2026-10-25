@@ -39,6 +39,194 @@ const accepted = (notes = 'device draft'): Acknowledgment => ({
   record: { ...record, ...draft(notes), version: 2 },
 })
 describe('durable connected synchronization', () => {
+  it('uses the durable operation revision when finalizing a receipt', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    await db.save(inspection.id, 1, draft())
+    const claimed = (await db.claim('tab', 0))!
+    await db.acknowledge({ ...claimed, revision: 0 }, accepted())
+    expect(await db.operations.count()).toBe(0)
+    expect((await db.records.get(inspection.id))?.state).toBe('synced')
+  })
+  it('rejects an operation identity mismatch without dropping queued work', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    await db.save(inspection.id, 1, draft())
+    const claimed = (await db.claim('tab', 0))!
+    await expect(
+      db.acknowledge(
+        { ...claimed, inspectionId: crypto.randomUUID() },
+        accepted(),
+      ),
+    ).rejects.toThrow('Invalid operation identity')
+    expect(await db.operations.count()).toBe(1)
+  })
+  it('retains work when a conflict receipt moves the server version backwards', async () => {
+    const db = database()
+    await db.cache(inspection, { ...record, version: 3 })
+    await db.save(inspection.id, 1, draft())
+    const claimed = (await db.claim('tab', 0))!
+    await expect(
+      db.acknowledge(claimed, {
+        kind: 'conflict',
+        record: { ...record, version: 2 },
+      }),
+    ).rejects.toThrow('Invalid server acknowledgment')
+    expect(await db.operations.count()).toBe(1)
+    expect((await db.records.get(inspection.id))?.record.version).toBe(3)
+  })
+  it('accepts equal answer values regardless of JSON object key ordering', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    const payload = {
+      ...draft(),
+      answers: { walls: 'pass' as const, floors: 'fail' as const },
+    }
+    await db.save(inspection.id, 1, payload)
+    const operation = (await db.claim('tab', 0))!
+    await db.acknowledge(operation, {
+      kind: 'accepted',
+      record: {
+        ...record,
+        ...payload,
+        answers: { floors: 'fail', walls: 'pass' },
+        version: 2,
+      },
+    })
+    expect(await db.operations.count()).toBe(0)
+    expect((await db.records.get(inspection.id))?.state).toBe('synced')
+  })
+
+  it.each(['notes', 'answers', 'status'] as const)(
+    'rejects an accepted acknowledgment with mismatched %s without clearing the durable queue',
+    async (field) => {
+      const db = database()
+      await db.cache(inspection, record)
+      const payload = draft()
+      if (field === 'status')
+        payload.answers = Object.fromEntries(
+          [
+            'walls',
+            'floors',
+            'kitchen',
+            'water',
+            'bathroom',
+            'leaks',
+            'electrical',
+            'alarm',
+          ].map((key) => [key, 'pass']),
+        ) as typeof payload.answers
+      await db.save(inspection.id, 1, payload)
+      const operation = (await db.claim('tab', 0))!
+      const response: Acknowledgment = {
+        kind: 'accepted',
+        record: { ...record, ...payload, version: 2 },
+      }
+      if (field === 'notes') response.record.notes = 'Different operation'
+      else if (field === 'answers') response.record.answers = { walls: 'fail' }
+      else {
+        response.record.status = 'completed'
+        response.record.completed_at = record.updated_at
+      }
+      await expect(db.acknowledge(operation, response)).rejects.toThrow(
+        'Invalid server acknowledgment',
+      )
+      expect(await db.operations.get(operation.id)).toBeDefined()
+      expect((await db.records.get(inspection.id))?.record.notes).toBe(
+        'device draft',
+      )
+      expect((await db.records.get(inspection.id))?.dirty).toBe(true)
+    },
+  )
+  it('rolls back the connected record if atomic outbox creation fails', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    const failure = () => {
+      throw new Error('Outbox storage failed')
+    }
+    db.operations.hook('creating', failure)
+    await expect(db.save(inspection.id, 1, draft())).rejects.toThrow(
+      'Outbox storage failed',
+    )
+    expect((await db.records.get(inspection.id))?.record).toEqual(record)
+    expect((await db.records.get(inspection.id))?.revision).toBe(1)
+    expect(await db.operations.count()).toBe(0)
+    db.operations.hook('creating').unsubscribe(failure)
+    await db.save(inspection.id, 1, draft())
+    expect(await db.operations.count()).toBe(1)
+  })
+  it('sends at most ten operations per pass and resumes unrelated pending records', async () => {
+    const db = database()
+    for (let index = 0; index < 11; index++) {
+      const id = crypto.randomUUID()
+      await db.cache({ ...inspection, id }, { ...record, inspection_id: id })
+      await db.save(id, 1, draft())
+    }
+    const sent: string[] = []
+    const worker = new SyncWorker(
+      db,
+      async (op) => {
+        sent.push(op.id)
+        return {
+          kind: 'accepted',
+          record: {
+            ...record,
+            ...op.payload,
+            inspection_id: op.inspectionId,
+            version: op.baseVersion + 1,
+          },
+        }
+      },
+      () => true,
+    )
+    await worker.run()
+    expect(sent).toHaveLength(10)
+    expect(await db.operations.count()).toBe(1)
+    await worker.run()
+    expect(sent).toHaveLength(11)
+    expect(await db.operations.count()).toBe(0)
+  })
+  it('a restarted worker replays an interrupted claimed operation after lease expiry', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    await db.save(inspection.id, 1, draft())
+    const interrupted = (await db.claim('closed-tab', 0))!
+    db.close()
+    await db.open()
+    const send = vi.fn(async (operation: import('./database').Operation) =>
+      accepted(operation.payload.notes),
+    )
+    const worker = new SyncWorker(
+      db,
+      send,
+      () => true,
+      () => 45_000,
+    )
+    await worker.run()
+    expect(send.mock.calls[0][0].id).toBe(interrupted.id)
+    expect(await db.operations.count()).toBe(0)
+    expect((await db.records.get(inspection.id))?.state).toBe('synced')
+  })
+  it('persists capped exponential backoff and jitter without changing the operation ID', async () => {
+    const db = database()
+    await db.cache(inspection, record)
+    await db.save(inspection.id, 1, draft())
+    let now = 0,
+      id = ''
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      const operation = (await db.claim('tab', now))!
+      if (!id) id = operation.id
+      expect(operation.id).toBe(id)
+      await db.fail(operation, 'Retry later', false, now, 1)
+      const queued = (await db.operations.get(id))!
+      expect(queued.nextAttempt - now).toBe(
+        Math.min(60000, 1000 * 2 ** (attempt - 1)) * 1.25,
+      )
+      expect(queued.attempts).toBe(attempt)
+      now = queued.nextAttempt
+    }
+  })
+
   it('times out stalled requests and keeps the operation retryable', async () => {
     const db = database()
     await db.cache(inspection, record)

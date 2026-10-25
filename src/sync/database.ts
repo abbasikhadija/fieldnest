@@ -1,6 +1,10 @@
 import { StaleDraftError } from '../persistence/database'
 import Dexie, { type Table } from 'dexie'
-import { missingQuestions, validateDraft } from '../domain/inspection'
+import {
+  questions,
+  missingQuestions,
+  validateDraft,
+} from '../domain/inspection'
 import type { RemoteInspection, RemoteRecord } from '../remote/database.types'
 
 import type { Payload, Acknowledgment } from '../domain/synchronization'
@@ -144,12 +148,25 @@ export class ConnectedDatabase extends Dexie {
   async acknowledge(operation: Operation, acknowledgment: Acknowledgment) {
     await this.transaction('rw', this.records, this.operations, async () => {
       const queued = await this.operations.get(operation.id)
-      const local = await this.records.get(operation.inspectionId)
-      if (!queued || !local) return
+      if (!queued) return
+      if (queued.inspectionId !== operation.inspectionId)
+        throw new Error('Invalid operation identity.')
+      const local = await this.records.get(queued.inspectionId)
+      if (!local) return
       if (
         acknowledgment.record.inspection_id !== local.id ||
         (acknowledgment.kind === 'accepted' &&
-          acknowledgment.record.version !== operation.baseVersion + 1)
+          (acknowledgment.record.version !== queued.baseVersion + 1 ||
+            acknowledgment.record.notes !== queued.payload.notes ||
+            acknowledgment.record.status !== queued.payload.status ||
+            Object.keys(acknowledgment.record.answers).length !==
+              Object.keys(queued.payload.answers).length ||
+            !questions.every(
+              (question) =>
+                acknowledgment.record.answers[question.id] ===
+                queued.payload.answers[question.id],
+            ))) ||
+        acknowledgment.record.version < queued.baseVersion
       )
         throw new Error('Invalid server acknowledgment.')
       if (acknowledgment.kind === 'conflict') {
@@ -168,7 +185,7 @@ export class ConnectedDatabase extends Dexie {
         return
       }
       await this.operations.delete(operation.id)
-      const newer = local.revision !== operation.revision
+      const newer = local.revision !== queued.revision
       const updated: CachedInspection = {
         ...local,
         record: newer

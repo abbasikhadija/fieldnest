@@ -49,6 +49,15 @@ describe('remote response and identity validation', () => {
     const from = vi.fn()
     const client = {
       auth: {
+        getSession: async () => ({
+          data: {
+            session: {
+              user: { id: 'expected' },
+              access_token: 'fixture-token',
+            },
+          },
+          error: null,
+        }),
         getUser: async () => ({ data: { user: { id: 'other' } }, error: null }),
       },
       from,
