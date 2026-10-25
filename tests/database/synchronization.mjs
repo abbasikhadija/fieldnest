@@ -144,6 +144,36 @@ export async function verifySynchronization(client) {
     await client.query('set local role anon')
     await assert.rejects(call(randomUUID()), (error) => error.code === '42501')
   })
+  await test('a reviewed local copy uses a new operation and current server version', async () => {
+    await as()
+    await call(randomUUID())
+    await as(other)
+    const conflictedId = randomUUID()
+    const local = { ...payload, notes: 'Reviewed second inspector copy' }
+    const conflict = await call(conflictedId, 1, local)
+    const resolution = await call(randomUUID(), conflict.record.version, local)
+    assert.equal(resolution.kind, 'accepted')
+    assert.equal(resolution.record.version, 3)
+    assert.equal(resolution.record.notes, local.notes)
+    assert.deepEqual(await call(conflictedId, 1, local), conflict)
+  })
+  await test('a server edit after review conflicts again instead of being overwritten', async () => {
+    await as()
+    await call(randomUUID())
+    await as(other)
+    const local = { ...payload, notes: 'Retained resolution' }
+    const reviewed = await call(randomUUID(), 1, local)
+    await as()
+    await call(randomUUID(), 2, { ...payload, notes: 'Changed during review' })
+    await as(other)
+    const rejected = await call(randomUUID(), reviewed.record.version, local)
+    assert.equal(rejected.kind, 'conflict')
+    assert.equal(rejected.record.notes, 'Changed during review')
+    const accepted = await call(randomUUID(), rejected.record.version, local)
+    assert.equal(accepted.kind, 'accepted')
+    assert.equal(accepted.record.version, 4)
+    assert.equal(accepted.record.notes, local.notes)
+  })
   const connections = [
     new pg.Client(client.connectionParameters),
     new pg.Client(client.connectionParameters),
@@ -185,6 +215,34 @@ export async function verifySynchronization(client) {
     )
     console.log(
       'PASS simultaneous distinct writers cannot overwrite a newer version',
+    )
+    count++
+    await connections[1].query(
+      "select set_config('request.jwt.claim.sub',$1,false)",
+      [other],
+    )
+    const resolutions = await Promise.all(
+      connections.map((connection, index) =>
+        connection.query(
+          'select public.apply_inspection_operation($1,$2,$3,$4) as result',
+          [
+            randomUUID(),
+            inspection,
+            3,
+            { ...payload, notes: `Reviewed copy ${index}` },
+          ],
+        ),
+      ),
+    )
+    assert.deepEqual(
+      resolutions.map((result) => result.rows[0].result.kind).sort(),
+      ['accepted', 'conflict'],
+    )
+    assert.ok(
+      resolutions.every((result) => result.rows[0].result.record.version === 4),
+    )
+    console.log(
+      'PASS two authorized concurrent resolution attempts cannot silently overwrite each other',
     )
     count++
   } finally {

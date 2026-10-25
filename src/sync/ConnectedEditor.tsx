@@ -7,12 +7,20 @@ import {
 import { sessionFor, discardSession } from '../persistence/draftSession'
 import type { CachedInspection, ConnectedDatabase } from './database'
 import { syncLabel } from './status'
+import { ConflictReview } from './ConflictReview'
+import { RecoveryHistory } from './RecoveryHistory'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '../remote/database.types'
 export function ConnectedEditor({
   value,
   db,
+  client,
+  userId,
 }: {
   value: CachedInspection
   db: ConnectedDatabase
+  client: SupabaseClient<Database>
+  userId: string
 }) {
   const source: Inspection = {
     ...value.inspection,
@@ -74,6 +82,48 @@ export function ConnectedEditor({
     anchor.click()
     URL.revokeObjectURL(url)
   }
+  if (value.state === 'conflict')
+    return (
+      <section className="form-panel">
+        <h2>{value.inspection.property}</h2>
+        {(state.dirty || state.saving) && (
+          <div className="error-panel" role="alert">
+            <p>
+              Some edits in this tab are not saved. Download them before
+              reviewing the saved device conflict.
+            </p>
+            <button className="button secondary" onClick={download}>
+              Download unsaved device edits
+            </button>
+            <button
+              className="text-button"
+              disabled={state.saving}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    'Discard the unsaved edits in this tab and review the saved device copy? Download those edits first if needed.',
+                  )
+                ) {
+                  discardSession(source.id)
+                  rerender((value) => value + 1)
+                }
+              }}
+            >
+              Review saved device copy
+            </button>
+          </div>
+        )}
+        <ConflictReview
+          key={`${value.revision}:${value.remote?.version}`}
+          value={value}
+          db={db}
+          client={client}
+          userId={userId}
+          disabled={state.dirty || state.saving}
+        />
+        <RecoveryHistory db={db} id={value.id} />
+      </section>
+    )
   return (
     <section className="form-panel">
       <p className="eyebrow">Connected inspection</p>
@@ -194,12 +244,11 @@ export function ConnectedEditor({
       )}
       {locked && (
         <p>
-          Saved answers are read-only.{' '}
-          {value.state === 'conflict'
-            ? 'Keep your device copy for review.'
-            : ''}
+          Saved answers are read-only. Download a device copy for recovery if
+          needed.
         </p>
       )}
+      <RecoveryHistory db={db} id={value.id} />
     </section>
   )
 }

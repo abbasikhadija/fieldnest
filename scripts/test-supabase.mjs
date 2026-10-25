@@ -121,14 +121,12 @@ try {
       syncFixture = randomUUID()
       assert.ifError(
         (
-          await admin
-            .from('inspections')
-            .insert({
-              id: syncFixture,
-              property: 'RPC fixture',
-              address: 'Fictional',
-              kind: 'Routine condition inspection',
-            })
+          await admin.from('inspections').insert({
+            id: syncFixture,
+            property: 'RPC fixture',
+            address: 'Fictional',
+            kind: 'Routine condition inspection',
+          })
         ).error,
       )
       assert.ifError(
@@ -140,16 +138,12 @@ try {
       )
       assert.ifError(
         (
-          await admin
-            .from('inspection_assignments')
-            .insert(
-              users
-                .slice(0, 2)
-                .map((user) => ({
-                  inspection_id: syncFixture,
-                  user_id: user.id,
-                })),
-            )
+          await admin.from('inspection_assignments').insert(
+            users.slice(0, 2).map((user) => ({
+              inspection_id: syncFixture,
+              user_id: user.id,
+            })),
+          )
         ).error,
       )
       const args = {
@@ -191,6 +185,58 @@ try {
         ).error?.code,
         '42501',
       )
+    },
+  )
+  await check(
+    'reviewed resolution uses a new version-checked request and preserves conflict replay',
+    async () => {
+      const body = {
+        inspection_id: syncFixture,
+        base_version: 2,
+        payload: {
+          answers: { walls: 'fail' },
+          notes: 'Reviewed HTTP copy',
+          status: 'draft',
+        },
+      }
+      const first = await clients[1].rpc('apply_inspection_operation', {
+        ...body,
+        operation_id: randomUUID(),
+      })
+      assert.ifError(first.error)
+      assert.equal(first.data.kind, 'accepted')
+      const staleId = randomUUID()
+      const stale = await clients[0].rpc('apply_inspection_operation', {
+        ...body,
+        operation_id: staleId,
+      })
+      assert.ifError(stale.error)
+      assert.equal(stale.data.kind, 'conflict')
+      const resolved = await clients[0].rpc('apply_inspection_operation', {
+        ...body,
+        base_version: stale.data.record.version,
+        operation_id: randomUUID(),
+        payload: { ...body.payload, notes: 'Resolved after real review' },
+      })
+      assert.ifError(resolved.error)
+      assert.equal(resolved.data.kind, 'accepted')
+      assert.equal(resolved.data.record.version, 4)
+      const replay = await clients[0].rpc('apply_inspection_operation', {
+        ...body,
+        operation_id: staleId,
+      })
+      assert.ifError(replay.error)
+      assert.deepEqual(replay.data, stale.data)
+      const retrieved = await clients[1]
+        .from('inspection_records')
+        .select('notes,version')
+        .eq('inspection_id', syncFixture)
+        .single()
+      assert.ifError(retrieved.error)
+      assert.deepEqual(retrieved.data, {
+        notes: 'Resolved after real review',
+        version: 4,
+      })
     },
   )
   await check('real Auth sign-out removes this client session', async () => {

@@ -16,7 +16,7 @@ Storage errors keep your latest edits in the current tab with retry/download act
 
 Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
 
-Connected accounts download assigned inspections, save drafts and complete cached work offline, then synchronize through a version-checked Supabase transaction. Device saves and server acceptance have separate status messages. Pending operations survive refresh and lost responses; demo records stay separate. Hosted M3 synchronization requires the new migration: see [backend setup](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization). Conflicts preserve both copies; manual resolution is the next milestone.
+Connected accounts download assigned inspections, save drafts and complete cached work offline, then synchronize through a version-checked Supabase transaction. Device saves and server acceptance have separate status messages. Pending operations survive refresh and lost responses; demo records stay separate. Hosted M3 synchronization requires the new migration: see [backend setup](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization). Conflicts preserve both copies. Review highlighted answer, observation and completion differences, then choose the reviewed server copy or submit your device copy with a new version check. Another server change requires another review. Previous review copies remain available for recovery download. Completed server records stay locked.
 
 ## Develop
 

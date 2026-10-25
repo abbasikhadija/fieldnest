@@ -173,7 +173,13 @@ export function ConnectedWorkspace({
           <button className="text-button" onClick={() => setSelected(null)}>
             ← Assigned inspections
           </button>
-          <ConnectedEditor key={current.id} value={current} db={db} />
+          <ConnectedEditor
+            key={current.id}
+            value={current}
+            db={db}
+            client={client}
+            userId={user.id}
+          />
         </>
       ) : (
         <div className="inspection-list">

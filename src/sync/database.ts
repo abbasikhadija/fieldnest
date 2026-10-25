@@ -31,16 +31,128 @@ export interface Operation {
   owner?: string
   blocked: boolean
 }
+export interface ResolutionRecovery {
+  id: string
+  inspectionId: string
+  createdAt: string
+  choice: 'device' | 'server'
+  local: RemoteRecord
+  server: RemoteRecord
+  operation: Operation
+}
 export class ConnectedDatabase extends Dexie {
   records!: Table<CachedInspection, string>
   operations!: Table<Operation, string>
+  resolutions!: Table<ResolutionRecovery, string>
   constructor(accountId: string, project: string) {
     super(`fieldnest-connected-${encodeURIComponent(project)}-${accountId}`)
     this.version(1).stores({
       records: 'id, state',
       operations: 'id, &inspectionId, nextAttempt',
     })
+    this.version(2).stores({
+      records: 'id, state',
+      operations: 'id, &inspectionId, nextAttempt',
+      resolutions: 'id, inspectionId, createdAt',
+    })
     this.on('versionchange', () => this.close())
+  }
+  async refreshConflict(id: string, revision: number, remote: RemoteRecord) {
+    await this.transaction('rw', this.records, async () => {
+      const current = await this.records.get(id)
+      if (
+        !current ||
+        current.state !== 'conflict' ||
+        current.revision !== revision
+      )
+        throw new StaleDraftError()
+      if (
+        remote.inspection_id !== id ||
+        !current.remote ||
+        remote.version < current.remote.version
+      )
+        throw new Error(
+          'The server copy could not be verified. Your device draft is unchanged.',
+        )
+      if (remote.version === current.remote.version) return
+      await this.records.put({
+        ...current,
+        remote,
+        revision: current.revision + 1,
+      })
+    })
+  }
+  async resolveConflict(
+    id: string,
+    revision: number,
+    serverVersion: number,
+    choice: 'device' | 'server',
+  ) {
+    if (choice !== 'device' && choice !== 'server')
+      throw new Error('Choose a copy to keep.')
+    await this.transaction(
+      'rw',
+      this.records,
+      this.operations,
+      this.resolutions,
+      async () => {
+        const current = await this.records.get(id)
+        if (
+          !current ||
+          current.state !== 'conflict' ||
+          current.revision !== revision ||
+          !current.remote ||
+          current.remote.version !== serverVersion
+        )
+          throw new StaleDraftError()
+        const operation = await this.operations
+          .where('inspectionId')
+          .equals(id)
+          .first()
+        if (!operation || !operation.blocked)
+          throw new Error(
+            'The saved conflict changed. Reopen it before choosing a copy.',
+          )
+        if (choice === 'device') {
+          if (current.remote.status === 'completed')
+            throw new Error(
+              'The server inspection is completed. Its answers cannot be replaced.',
+            )
+          validateDraft(current.record)
+          if (
+            current.record.status === 'completed' &&
+            missingQuestions(current.record.answers).length
+          )
+            throw new Error(
+              'Complete every checklist answer before submitting this copy.',
+            )
+        }
+        await this.resolutions.add({
+          id: crypto.randomUUID(),
+          inspectionId: id,
+          createdAt: new Date().toISOString(),
+          choice,
+          local: current.record,
+          server: current.remote,
+          operation,
+        })
+        await this.operations.delete(operation.id)
+        const updated: CachedInspection = {
+          ...current,
+          record:
+            choice === 'server'
+              ? current.remote
+              : { ...current.record, version: serverVersion },
+          revision: current.revision + 1,
+          dirty: choice === 'device',
+          state: choice === 'device' ? 'pending' : 'synced',
+          message: undefined,
+          remote: undefined,
+        }
+        await this.records.put(updated)
+        if (choice === 'device') await this.enqueue(updated)
+      },
+    )
   }
   async cache(inspection: RemoteInspection, record: RemoteRecord) {
     await this.transaction('rw', this.records, async () => {
@@ -180,7 +292,7 @@ export class ConnectedDatabase extends Dexie {
           state: 'conflict',
           remote: acknowledgment.record,
           message:
-            'Someone updated this inspection. Your device copy is preserved. Conflict resolution is available in a later release.',
+            'Someone updated this inspection while you were working. Both copies are preserved. Review the differences before choosing what to keep.',
         })
         return
       }
