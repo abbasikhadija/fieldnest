@@ -51,3 +51,5 @@ Final measurements, verification and deployment evidence are recorded in context
 | Synthetic idle queue claim p95, ms | 192.3 | 4.0 |
 
 The queue improvement is specific to the delayed-record workload. The initial bundle is 2,458 gzip bytes smaller, while the total offline cache grew slightly with refinements and route chunks. UI results vary: desktop ready and mobile paint did not improve in this sample. Do not claim a universal startup speedup. All reference budgets were met on this host. Baseline/final JSON files remain ignored under .local/m6; these are measured values, not estimated benchmarks.
+
+Final CI verification: run 40229832974 passed 76 unit tests, 37 PostgreSQL tests, 16 standard browser tests, 14 actual Supabase API tests and 12 connected browser cases. WCAG-tagged scans covered connected editor/conflict fixtures as well as public/demo screens; no violations were reported in the tested states. Deployment of 73404ae succeeded. See context.md for public-origin verification and limitations.
