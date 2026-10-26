@@ -1,5 +1,7 @@
 # Architecture
 
+Current release implements M0–M6. Milestone sections below are historical snapshots; later sections supersede earlier boundaries. The current trust/data-flow diagram is in README.md. M7 adds release verification and documentation without changing these persistence/synchronization guarantees.
+
 ## Application and hosting
 React with strict TypeScript, Vite, Tailwind CSS v4 and React Router. App owns the responsive layout and routes; pages own task workflows; components contain shared icons, storage recovery and system notices. No external fonts or image requests are required.
 

@@ -1,5 +1,7 @@
 # Synchronization protocol
 
+Current implementation: M3 wire contract with M4 conflict review, M5 recovery and M6 indexed queue selection. Earlier milestone boundaries below are historical context, not missing current functionality. M7 introduces no RPC/schema or protocol changes.
+
 M0 contains no synchronization engine, queue, persistence or backend. This document establishes constraints for the detailed M3 design; it is not an implemented API contract.
 
 Each queued operation will have a stable UUID, authorized record identifier, expected base version, validated payload and account scope. The operation identifier remains unchanged across retries, including timeouts and lost acknowledgments. Local record and queue edits must commit atomically through Dexie before announcing a save.

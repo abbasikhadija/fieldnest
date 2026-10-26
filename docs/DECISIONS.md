@@ -40,3 +40,7 @@
 - M6: Use the existing queue due-time index; native browser measurement showed idle scans loading 1,000 delayed payloads unnecessarily. Preserve lease/block/version guards and test candidate selection without a schema migration.
 - M6: Lazy-load secondary local pages while precaching all chunks. This reduces initial code execution with a small increase in total offline cache; measured tradeoffs are documented rather than claiming a universal startup gain.
 - M6: Add axe-core only as a dev/test dependency, retain all WCAG rules and correct contrast findings. Pair scans with keyboard/320px workflow checks; do not claim full accessibility conformance or physical-device validation.
+
+- M7: Emit public build-info.json containing only the application Git SHA; verify it after Pages deployment so HTTP 200 from an older release cannot be mistaken for the new release. Metadata is not precached.
+- M7: Keep browser release checks separate from connected failure tests. Chromium CDP eligibility diagnostics are explicitly distinct from OS installation; mobile WebKit emulation is distinct from physical iOS/Safari testing.
+- M7: Preserve the configured abbasikhadija origin/deployment. The continuation request's sultanshahdev URL was clarified by the owner as a paste mistake; no repository or hosted setup was replaced.

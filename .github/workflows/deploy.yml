@@ -42,6 +42,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - run: npm run security:check
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
@@ -50,6 +51,8 @@ jobs:
           name: m6-mobile-review
           path: test-results/m6-inspection-*.png
           if-no-files-found: ignore
+      - run: npx playwright install --with-deps firefox webkit
+      - run: npm run test:release
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
@@ -77,7 +80,9 @@ jobs:
         if: always()
         with:
           name: conflict-review-screens
-          path: test-results/m4-conflict-*.png
+          path: |
+            test-results/m4-conflict-*.png
+            test-results/m7-conflict-*.png
           if-no-files-found: ignore
       - name: Inspect container status on failure
         if: failure()
@@ -89,6 +94,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: [verify, verify-auth]
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
@@ -99,3 +106,16 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/deploy-pages@v4
         id: deployment
+  smoke-production:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run smoke:production
+        env:
+          FIELDNEST_SMOKE_URL: ${{ needs.deploy.outputs.page_url }}
+          FIELDNEST_EXPECTED_REVISION: ${{ github.sha }}

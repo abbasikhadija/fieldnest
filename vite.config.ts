@@ -12,6 +12,12 @@ export default defineConfig(({ mode }) => {
   return {
     base: '/fieldnest/',
     plugins: [
+      {
+        name: 'fieldnest-build-info',
+        generateBundle() {
+          this.emitFile({ type: 'asset', fileName: 'build-info.json', source: JSON.stringify({ revision: process.env.GITHUB_SHA ?? 'local' }) })
+        },
+      },
       react(),
       tailwindcss(),
       VitePWA({

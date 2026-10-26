@@ -134,6 +134,7 @@ for (const choice of ['device', 'server'] as const) {
         fullPage: true,
       })
       await decision.check()
+      await second.locator('.form-panel').screenshot({ path: `test-results/m7-conflict-${test.info().project.name}.png` })
       if (choice === 'device') {
         // Change the server after B's review. B must see another conflict.
         await page

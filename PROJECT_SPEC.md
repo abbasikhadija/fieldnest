@@ -27,3 +27,6 @@ Failure recovery retains immutable pending operations across request timeout, lo
 
 ## M6 acceptance and boundary
 Refine the existing product with accessible contrast, clear keyboard focus, readable mobile controls, actionable missing-answer review, discoverable connected navigation and honest loading/offline states. Exercise primary screens with automated WCAG-tagged checks and keyboard/320px tests. Measure production bundles, reference UI timings and native IndexedDB queue work before/after optimization; retain offline caching and all data-integrity guarantees. No schema reset, new sync engine or M7 expansion. See docs/UX_REVIEW.md for targets, observed results and limitations.
+
+## M7 acceptance and boundary
+Finalize the existing application with verified Pages/subpath/PWA configuration, exact-revision production smoke checks, cross-browser offline release tests, dependency/credential-boundary review, authentic fictional screenshots, current README/architecture explanation and reproducible failure guides. Never infer OS installation or physical-device coverage from emulation. Record unexecuted/manual checks and pending deployment separately; do not declare critical acceptance complete while release CI is unverified. No new inspection feature, schema reset or synchronization refactor belongs to M7.

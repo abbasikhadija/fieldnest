@@ -1,5 +1,7 @@
 # Supabase setup (M2 foundation and M3 upgrade)
 
+Current hosted status: the configured project already has the manually applied M2/M3 schema. M4–M7 need no additional cloud migration. Historical setup steps below do not authorize replaying foundation/seed SQL or resetting hosted data. Reconcile migration history before future CLI changes.
+
 M2 provides real password authentication, authorized assignment/record reads, SQL constraints and RLS. Connected records are read-only and online-only in this milestone. M3 implements durable synchronization; existing hosted projects must apply the new migration using the M3 upgrade section below. The existing local demo needs no backend and remains isolated.
 
 ## Local Supabase with Docker

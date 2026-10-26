@@ -2,32 +2,67 @@
 
 **Your work. Saved wherever you are.**
 
-An offline-first property inspection app for people working away from a dependable connection.
+Fieldnest helps property inspectors finish their checklist when the connection is unreliable. Answers save on the device first. Connected accounts synchronize later, with version checks that preserve competing edits instead of silently overwriting them.
 
-[Try Fieldnest](https://abbasikhadija.github.io/fieldnest/) · [Source](https://github.com/abbasikhadija/fieldnest)
+[Try the live app](https://abbasikhadija.github.io/fieldnest/) · [Architecture](docs/ARCHITECTURE.md) · [Failure demos](docs/DEMO_GUIDE.md) · [Release checks](docs/RELEASE.md)
 
-## Local demo
+## Try it in two minutes
 
-Choose **Try Fieldnest** to create three fictional property assignments on this device. Open a property, answer the eight predefined checks, add observations and review your inspection. You can leave an incomplete draft and return later. Once every check is answered, complete it to keep a read-only local result.
+1. Choose **Try Fieldnest**. No account or setup is required.
+2. Open a fictional property and answer a few checks. Wait for **Saved on this device**.
+3. Refresh to recover your draft. Once the app is cached, disconnect and continue working.
+4. Review the checklist, follow missing-answer links, and complete it when every check is answered. Completed inspections are locked review copies.
 
-Choices save immediately; notes save after a short pause. Wait for **Saved on this device** before closing or refreshing. Once the app has been cached, available inspections can be edited and completed offline. Activity shows acknowledged local saves. Demo records are never sent to a server.
+Demo records stay on this device and never synchronize to a server. **Account** opens the separate connected workspace for privately provisioned users; no public shared login is provided.
 
-Storage errors keep your latest edits in the current tab with retry/download actions. If another tab saved a newer copy, Fieldnest preserves your draft and asks you to download it before explicitly discarding it to load the device copy. Settings can request persistent storage and download saved records as JSON. In-app import is not available yet.
+![Fictional property assignments in Fieldnest](docs/images/my-work.png)
 
-Browser data can be deleted or evicted; private browsing and device loss can remove local records. Unacknowledged edits held in memory can be lost on a crash or forced close. Keep separate copies of important work. Persistent storage and browser exit warnings are best effort, not backups.
+## What works
 
-Connected accounts download assigned inspections, save drafts and complete cached work offline, then synchronize through a version-checked Supabase transaction. Device saves and server acceptance have separate status messages. Pending operations survive refresh and lost responses; demo records stay separate. Hosted M3 synchronization requires the new migration: see [backend setup](docs/BACKEND_SETUP.md#m3-hosted-upgrade-required-before-hosted-synchronization). Conflicts preserve both copies. Review highlighted answer, observation and completion differences, then choose the reviewed server copy or submit your device copy with a new version check. Another server change requires another review. Previous review copies remain available for recovery download. Completed server records stay locked.
+- Eight predefined property checks, optional observations, incomplete drafts and completion.
+- Acknowledged device saves, refresh recovery, offline routes and JSON recovery downloads.
+- Supabase password sign-in, authorized assignments and isolated account/project caches.
+- Durable synchronization with stable request IDs, bounded retries and atomic acknowledgment cleanup.
+- Side-by-side conflict review, explicit device/server choices and retained recovery history.
+- Mobile layouts, keyboard section navigation and automated accessibility checks.
 
-## Develop
+![A saved fictional inspection with pass and fail findings](docs/images/inspection-desktop.png)
 
-Use Node.js 22.12 or newer in the Node 22 release line:
+## How synchronization protects work
+
+A device save commits the record and an immutable queued request together. The server authenticates the request, verifies assignment and checks its base version inside a PostgreSQL transaction. It saves the updated record and a receipt together. If a response disappears, the device retries the **same request ID** and receives the original result without applying the change twice.
+
+A stale base version produces a conflict. The device keeps its edits and the server snapshot. The inspector reviews differences and either adopts the reviewed server copy or queues a fresh request against that reviewed version. Another writer can still win first; that produces another review, never an unconditional overwrite. Completed server inspections cannot be replaced.
+
+```mermaid
+flowchart LR
+  UI[React inspection UI] --> Demo[Isolated demo IndexedDB]
+  UI --> Local[Account-scoped IndexedDB]
+  Local --> Queue[Immutable operation queue]
+  Queue --> RPC[Authenticated version-checked RPC]
+  RPC --> PG[PostgreSQL records and receipts]
+  PG --> Ack[Durable device acknowledgment]
+  Ack --> Local
+  RPC --> Review[Conflict comparison and recovery]
+  Review --> Local
+  Pages[GitHub Pages] --> SW[Static-only PWA cache]
+  SW --> UI
+```
+
+The frontend is hosted on GitHub Pages under `/fieldnest/`; Supabase hosts Auth and PostgreSQL. Hash routing supports direct links without server rewrites. Service-worker caching is limited to application assets, never authenticated API responses. [Detailed protocol](docs/SYNC_PROTOCOL.md).
+
+## Run locally
+
+Use Node.js 22.12 or newer in the Node 22 release line.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:5173/fieldnest/. No credentials are needed for the demo. `.env.example` reserves browser-safe Supabase configuration for M2; never put secret/service-role keys in Vite variables.
+Open http://127.0.0.1:5173/fieldnest/. The local demo needs no backend. For connected accounts, follow [backend setup](docs/BACKEND_SETUP.md); use only the Supabase URL and browser-safe publishable/anon key in `.env.local`. Never put secret or service-role keys in `VITE_` variables. Do not reset the configured hosted project or replay its foundation migrations.
+
+## Verify and reproduce failures
 
 ```sh
 npm run typecheck
@@ -35,34 +70,20 @@ npm run lint
 npm test
 npm run test:db
 npm run build
-npx playwright install chromium
+npm run security:check
+npx playwright install chromium firefox webkit
 npm run test:e2e
+npm run test:release
 ```
 
-Unit tests cover local transactions, save acknowledgment/recovery, auth identity races and validation. The real PostgreSQL suite tests SQL constraints and RLS. Docker-capable CI also starts actual Supabase Auth/PostgREST and tests password sign-in, shared assignments, unauthorized access and browser sign-out/account isolation. Browser tests exercise desktop/mobile forms, offline refresh/completion, injected storage failure, navigation and two-tab stale drafts. The suite runs against the production build under /fieldnest/.
+Native database tests require installed PostgreSQL. Connected integration tests require a disposable local Supabase/Docker stack and private generated fixtures; see [setup](docs/BACKEND_SETUP.md) and [failure demonstrations](docs/DEMO_GUIDE.md). Do not point fixture scripts or test bootstrap SQL at production.
 
-## Deployment
+CI gates deployment on the standard suite, real PostgreSQL and actual Supabase/Auth/connected-browser tests. A separate smoke job verifies the deployed Git SHA, assets, manifest, icons and service worker. Run `npm run smoke:production` to inspect the public deployment. `FIELDNEST_BASE_URL` runs browser checks against the deployed origin.
 
-GitHub Pages uses GitHub Actions as its source. Pushes to main verify types, lint, unit tests, production build and browser tests before deploying. Pull requests only verify. Deployment also requires the real Supabase integration job to pass. Hash routes avoid server rewrites. The manifest, service worker and static assets are scoped to /fieldnest/. No backend is hosted on Pages. Supabase project URL and publishable/legacy anon key can be set as GitHub Actions repository variables; privileged keys are rejected before bundling.
+## Engineering evidence and limits
 
-To test the actual deployed version from PowerShell:
+[UX measurements](docs/UX_REVIEW.md) document actual before/after results: synthetic idle queue selection improved from 150.9ms to 1.8ms median on the reference host; initial JavaScript became smaller. Timings are workload/device-specific. [Security review](docs/SECURITY_REVIEW.md) describes the checked boundaries and remaining risks.
 
-```powershell
-$env:FIELDNEST_BASE_URL = 'https://abbasikhadija.github.io/fieldnest/'
-npm run test:e2e
-Remove-Item Env:FIELDNEST_BASE_URL
-```
+Only successfully acknowledged device writes survive refresh. A crash can lose unsaved memory; browser deletion/eviction, private browsing and device loss can remove local data. Persistent-storage requests and exit warnings are best effort. JSON exports have no in-app import. Signing out hides account data and retains saved work; browser storage is not encryption. Synchronization while the browser is closed is not promised.
 
-M4 conflict resolution is implemented: compare saved device/server copies, choose a copy explicitly, and retain both in device recovery history. Resubmission checks the reviewed server version; another update produces another conflict. [Integration run 40225583165](https://github.com/abbasikhadija/fieldnest/actions/runs/40225583165) passed 66 unit tests, 37 real PostgreSQL tests, 14 actual Supabase Auth/API tests and eight connected desktop/mobile browser tests. The hosted M3 migration was applied by the owner; M4 requires no additional cloud SQL. Manual hosted offline/second-device testing was explicitly skipped, separately from the automated disposable Supabase coverage.
-
-## Engineering notes
-
-MASTER_PROMPT.md defines requirements and sequential milestones. AGENTS.md provides development instructions. docs/ARCHITECTURE.md explains local persistence and recovery; docs/DECISIONS.md records tradeoffs; docs/SYNC_PROTOCOL.md documents the implemented synchronization contract. docs/BACKEND_SETUP.md explains Supabase configuration, private local test users and hosted setup. Server guarantees are exercised by actual PostgreSQL and disposable Supabase tests; browser mocks alone do not establish them.
-
-For interrupted synchronization, scheduled retries and device-storage failures, see [failure recovery checks](docs/RELIABILITY.md). Saved requests retain their identity across retries; a server result is only confirmed after device acknowledgment processing succeeds.
-
-M5 failure recovery is verified in [run 40227573927](https://github.com/abbasikhadija/fieldnest/actions/runs/40227573927): 75 unit tests, 37 PostgreSQL tests, 14 real Supabase API tests, 12 connected browser cases and 12 standard browser regressions passed before deployment. Tests cover repeated lost responses, interrupted requests, acknowledgment-storage failures, partial success and competing tabs. No additional hosted migration is required.
-
-M6 improves mobile readability, keyboard navigation, contrast, missing-answer recovery and initial route loading. [UX review and measurements](docs/UX_REVIEW.md) documents the screen review, reproducible browser benchmark, measured queue improvement and accessibility limits. Run npm run measure:ui after a production build to collect local reference measurements.
-
-M6 [verification and deployment](https://github.com/abbasikhadija/fieldnest/actions/runs/40229832974) passed 76 unit tests, 37 PostgreSQL tests, 14 Supabase API tests, 12 connected browser cases and 16 standard browser checks, including automated accessibility and keyboard/mobile workflows. Physical-device and screen-reader evaluation remain unverified.
+Automated emulation and Chromium installability diagnostics are distinct from physical-device testing and an actual OS-level PWA installation. Those manual checks, screen-reader evaluation and private hosted second-device testing are tracked in [release status](docs/RELEASE.md).
