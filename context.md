@@ -240,3 +240,22 @@ Local production HTTP smoke passed HTML/assets, scope/id/manifest, actual PNG di
 Files: .github/workflows/deploy.yml; vite.config.ts; package.json; scripts/{smoke-production.mjs,check-browser-secrets.mjs,capture-demo.mjs}; playwright.release.config.ts; e2e-release/release.spec.ts; e2e-connected/conflicts.spec.ts (fictional component-only screenshot); README.md; docs/{DEMO_GUIDE.md,SECURITY_REVIEW.md,RELEASE.md,ARCHITECTURE.md,BACKEND_SETUP.md,SYNC_PROTOCOL.md,DECISIONS.md}; docs/images/*.png; PROJECT_SPEC.md; context.md. No runtime inspection/sync logic or SQL changed. No dependency was added. Images were visually reviewed and show only fictional demo data. No secrets/local credentials were staged.
 
 Next: review final diff, commit once, push to existing origin/main, perform essential deployed-origin checks and inspect resulting CI status once. If the workflow is pending or fails, record that accurately and stop; no repeated polling. There is no M8; remaining work after this milestone is only explicit follow-up/maintenance and documented manual validation.
+
+## M7 final continuation result — 2026-10-26
+Committed and pushed all recovered/finished M7 work as c6c6bd742048cb53b447cdb1865b9564db4e3a8b (chore: finalize Fieldnest production deployment). Existing origin remains https://github.com/abbasikhadija/fieldnest.git; no history rewrite or remote replacement. No SQL or runtime inspection/sync logic was changed.
+
+Essential public-origin targeted release verification passed: FIELDNEST_BASE_URL=https://abbasikhadija.github.io/fieldnest/, Chromium/mobile-WebKit projects, 3 passing cases and 1 intentional non-Chromium CDP skip in 26.9s. This verifies the currently live application, offline draft/observation reloads and Chromium eligibility; it does not prove that new c6c6bd7 metadata/workflow has deployed.
+
+Exactly one post-application-push CI status request was made, as the owner requested. Run https://github.com/abbasikhadija/fieldnest/actions/runs/40362401477 was in_progress with no conclusion. No repeated CI polling or unchanged-suite rerun followed. Therefore final M7 CI/Firefox-on-Linux, new Pages deployment and exact-revision production smoke success remain UNVERIFIED. The existing live URL works, but do not claim c6c6bd7 deployed or declare full project completion from this snapshot. Manual OS installation/physical-device/screen-reader checks remain unverified; private hosted second-device testing remains explicitly skipped.
+
+Remaining completion steps (no new cloud configuration required): open that Actions run and confirm verify, verify-auth, deploy and smoke-production succeed. If it fails, inspect the failing step before a targeted repair; do not blindly rerun every test. After it succeeds, run from the project folder:
+
+```powershell
+$env:FIELDNEST_EXPECTED_REVISION = 'c6c6bd742048cb53b447cdb1865b9564db4e3a8b'
+npm run smoke:production
+Remove-Item Env:FIELDNEST_EXPECTED_REVISION
+```
+
+This checks the deployed application commit even if a later documentation-only [skip ci] commit is HEAD. Local Windows Firefox launch remains blocked with spawn UNKNOWN; successful Linux release tests are still required evidence, not assumed. Follow DEMO_GUIDE.md on an actual device for OS installation/physical browser validation and record exact results separately. No account password or privileged key is needed or requested.
+
+Evidence-only context/release status updates are committed with [skip ci] without retriggering the expensive suite. Final Git diff/check reviewed only relevant files. Application implementation is complete; M7/project release acceptance remains pending the critical CI/deployment checks above. Stop here per the efficient-verification instruction. No later milestone is started.
